@@ -1,0 +1,213 @@
+options {
+    MULTI=true;
+    NODE_DEFAULT_VOID=false;
+    STATIC=false;
+    NODE_PREFIX="AST_";
+    NODE_USES_PARSER=true;
+}
+
+
+PARSER_BEGIN( XQueryParser)
+    package XQuery;
+    public class XQueryParser {}
+PARSER_END( XQueryParser)
+
+    SimpleNode query()  #Root       : {}  
+{
+    ( xQuery() ) { return jjtThis; } 
+} 
+
+void absolutePath() #AP         : 
+{
+    Token t;
+}
+{  "document(\"" filename() "\")/" 
+    ( "/" relativePath() 
+      | relativePath()
+    )
+}
+
+void pathFilter()   #PF          : {}
+{  LOOKAHEAD(5)(relativePath() 
+        (    "eq" relativePath() pathFilter2()
+             | "is" relativePath() pathFilter2()
+             | ( "=" 
+                 (  relativePath() pathFilter2()
+                    | "=" relativePath() pathFilter2()
+                 )
+               )
+             |pathFilter2()
+        )
+        )
+    | LOOKAHEAD(5)"(" pathFilter() ")" pathFilter2()
+    | "not" pathFilter() pathFilter2()
+}
+
+void pathFilter2()  #void   : {}
+{  "and" pathFilter()pathFilter2()
+    | "or" pathFilter()pathFilter2()
+        | {}
+}
+
+
+void relativePath() #RP         : 
+{
+    Token t;
+}    
+{  tagname() relativePath2()
+    | "*" relativePath2()
+        | "." relativePath2()
+        | ".." relativePath2()
+        | "text()" relativePath2()
+        |  "(" relativePath() ")" relativePath2() 
+}
+
+void relativePath2() #void  : {}
+{ LOOKAHEAD(2) (
+        "/" relativePath() relativePath2()
+        | "//" relativePath() relativePath2()
+        )
+    | "[" pathFilter() "]" relativePath2()
+    | LOOKAHEAD(3) "," relativePath() 
+    | {}
+}
+
+void xQuery()       #XQ     :   
+{
+    Token t;
+}
+{   
+    //TODO:how to ensure that the tags match?!
+    absolutePath() xQuery2()
+        | "(" xQuery() ")" xQuery2()
+        | "<" tagname() ">" "{"   xQuery()  "}" "</" tagname() ">" xQuery2()
+        | forClause() letClauseWithEmpty() whereClause() returnClause() xQuery2()
+        | letClause() xQuery()
+        | var() xQuery2()
+        | string() xQuery2()
+}
+
+void xQuery2()      #void   :   {}
+{   LOOKAHEAD(2)  ( "/" relativePath() | "//" relativePath() ) xQuery2()
+    | LOOKAHEAD((","<VAR>":=") | (","<VAR>"in")) {}
+    | "," xQuery() xQuery2()
+        | {}
+}
+
+void forClause()    #FORCLAUSE  :   {}
+{   "for" var() "in" xQuery() ( "," var() "in" xQuery() )*
+}
+
+void letClause()    #LETCLAUSE(>1)  :   {}
+{   "let"  var() ":=" xQuery() ( "," var() ":=" xQuery() )*
+}
+
+void letClauseWithEmpty()     #void    :   {}
+{ letClause() | {}
+}
+
+void whereClause()  #WHERECLAUSE(>1)    :   {}
+{   "where" cond() 
+    | {}
+}
+
+void returnClause() #RETURNCLAUSE(>1)   :   {}
+{   "return" xQuery()
+}
+
+void cond()         #COND       :   {}
+{ "empty(" xQuery() ")" cond2()
+    | ( "some" var() "in" xQuery() 
+            ( "," var() "in" xQuery() )* "satisfies" cond() cond2()
+      )
+        |
+        ( xQuery() 
+          ( ("=" (  xQuery() cond2() 
+                    | "=" xQuery() cond2() 
+                 )
+            )
+            | "eq" xQuery() cond2() 
+            | "is" xQuery() cond2() 
+          )
+        )
+}
+
+void cond2()    #void   :   {}
+{   "and" cond() cond2()
+    | "or" cond() cond2()
+        |{}
+}
+
+void filename()     #FILENAME   :   
+{Token t;}
+{
+    t=<FILENAME>{jjtThis.setToken(t.kind,t.image);}
+}
+
+void var()  #VAR    : 
+{Token t;}
+{
+    t=<VAR>{jjtThis.setToken(t.kind,t.image);}
+}
+
+void string()   #STRING     :
+{Token t;}
+{
+    t=<STRING>{jjtThis.setToken(t.kind,t.image);}
+}
+
+Token tagname()  #TAGNAME    :
+{Token t;}
+{
+    t=<TAGNAME>{jjtThis.setToken(t.kind,t.image);return t;}
+}
+
+SKIP  : { " " | "\t" | "\n" | "\r" }
+
+TOKEN : { < FILENAME: (["a"-"z"] | ["A" - "Z"] | ["0"-"9"] | "_" )+".xml" > }
+TOKEN : { < STRING:  "\"" (~[ "\"", "\\" ,"\n" , "\r"])+ "\"" > }
+TOKEN : { < VAR: "$"(["a"-"z"] | ["A" - "Z"])(["a"-"z"]
+                | ["A" - "Z"] | ["0"-"9"])* >}
+TOKEN : { < TAGNAME: (["a"-"z"] | ["A" - "Z"])+ > }
+
+/* Reserved words */
+TOKEN [IGNORE_CASE]: {
+  < LET: "let">
+| < DOC: "doc"|"document" >
+| < TXT: "text()" >
+| < IN: "in" >
+| < FOR: "for" >
+| < WHERE: "where" >
+| < RETURN: "return" >
+| < EQ: "eq" >
+| < IS: "is" >
+| < EMPTY: "empty" >
+| < SOME: "some" >
+| < SATISFIES: "satisfies" >
+| < AND: "and" >
+| < OR: "or" >
+| < NOT: "not" >
+}
+
+/* symbols */
+TOKEN: {
+  < SINGLEEQ: "=" >
+| < DOUBLEEQ: "==" >
+| < ASSIGN: ":=" >
+| < STAR: "*" >
+| < COMMA:"," >
+| < DOT: "." >
+| < DOUBLEDOT: ".." >
+| < SEMI:";" >
+| < AT: "@" >
+| < LPAREN: "(" >
+| < RPAREN: ")" >
+| < LAB: "<" >
+| < RAB: ">" >
+| < LCB: "{" >
+| < RCB: "}" >
+| < LBRACE: "[" >
+| < RBRACE: "]" >
+| < SLASH:"/" >
+| < DOUBLESLASH:"//" >
+}
