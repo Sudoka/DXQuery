@@ -12,7 +12,8 @@ class SimpleNode implements Node {
     protected XQueryParser parser;
     public    int     m_type;
     public    String  m_text;
-
+    public    DebugLogger log;
+    
     public SimpleNode(int i) {
         id = i;
     }

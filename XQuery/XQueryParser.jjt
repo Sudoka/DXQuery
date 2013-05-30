@@ -13,7 +13,7 @@ PARSER_BEGIN( XQueryParser)
     public class XQueryParser {}
 PARSER_END( XQueryParser)
 
-    SimpleNode query()  #Root       : {}  
+    AST_Root query()  #Root       : {}  
 {
     ( xQuery() ) { return jjtThis; } 
 } 

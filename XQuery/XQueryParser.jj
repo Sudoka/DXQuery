@@ -17,7 +17,7 @@ PARSER_BEGIN( XQueryParser)
 /*@egen*/}
 PARSER_END( XQueryParser)
 
-    SimpleNode query()              : {/*@bgen(jjtree) Root */
+    AST_Root query()              : {/*@bgen(jjtree) Root */
   AST_Root jjtn000 = new AST_Root(this, JJTROOT);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);

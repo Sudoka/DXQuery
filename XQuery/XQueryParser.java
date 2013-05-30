@@ -3,8 +3,8 @@
     public class XQueryParser/*@bgen(jjtree)*/implements XQueryParserTreeConstants, XQueryParserConstants {/*@bgen(jjtree)*/
   protected JJTXQueryParserState jjtree = new JJTXQueryParserState();
 
-  final public SimpleNode query() throws ParseException {
-                                       /*@bgen(jjtree) Root */
+  final public AST_Root query() throws ParseException {
+                                     /*@bgen(jjtree) Root */
   AST_Root jjtn000 = new AST_Root(this, JJTROOT);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
