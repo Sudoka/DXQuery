@@ -10,8 +10,6 @@ class SimpleNode implements Node {
   protected int id;
   protected Object value;
   protected XQueryParser parser;
-    public    int     m_type;
-    public    String  m_text;
 
   public SimpleNode(int i) {
     id = i;
@@ -22,14 +20,6 @@ class SimpleNode implements Node {
     parser = p;
   }
 
-public int getId(){
-        return this.id;
-    }
-    public void setToken( int type, String text ){
-        m_type = type; 
-        m_text = text;
-    }
-       public String getText()  { return m_text; } 
   public void jjtOpen() {
   }
 

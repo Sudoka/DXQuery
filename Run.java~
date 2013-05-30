@@ -10,7 +10,7 @@ public class Run implements XQueryParserTreeConstants
     public static void main( String[] args )
         //--------------------------------------
     {           
-        String test = "for $a in document(\"j_caesar.xml\")//ACT, \n"+
+        String test = "for $a in doc(\"j_caesar.xml\")//ACT, \n"+
             "$sc in $a//SCENE, \n"+
             "$sp in $sc/SPEECH \n"+
             "where $sp/LINE/text() = \"Et tu, Brute! Then fall, Caesar.\" \n" +
@@ -48,7 +48,7 @@ public class Run implements XQueryParserTreeConstants
 
         String test5="for $s in document(\"j_caesar.xml\")//SPEAKER\n" + 
             "return <speaks>{<who>{$s/text()}</who>,\n" + 
-            "                for $a in doc(\"j_caesar.xml\")//ACT\n" + 
+            "                for $a in document(\"j_caesar.xml\")//ACT\n" + 
             "                where some $s1 in $a//SPEAKER satisfies $s1 eq $s\n" + 
             "                return <when>{$a/title/text()}</when>}\n" + 
             "       </speaks>\n";

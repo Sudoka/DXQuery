@@ -10,7 +10,7 @@ public class Run implements XQueryParserTreeConstants
     public static void main( String[] args )
         //--------------------------------------
     {           
-        String test = "for $a in document(\"j_caesar.xml\")//ACT, \n"+
+        String test = "for $a in doc(\"j_caesar.xml\")//ACT, \n"+
             "$sc in $a//SCENE, \n"+
             "$sp in $sc/SPEECH \n"+
             "where $sp/LINE/text() = \"Et tu, Brute! Then fall, Caesar.\" \n" +
@@ -57,7 +57,7 @@ public class Run implements XQueryParserTreeConstants
 
 
 
-        new Run().runQuery( test5);  
+        new Run().runQuery( test);  
     }
 
     void runQuery( String queryStr )

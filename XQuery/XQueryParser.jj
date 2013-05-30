@@ -2,6 +2,7 @@
 /*@egen*/options {
                
                             
+                 
     STATIC=false;
                        
                           
@@ -62,9 +63,9 @@ void absolutePath()             :
 }
 {/*@bgen(jjtree) AP */
    try {
-/*@egen*/  "document(\"" filename() "\")/" 
-    ( "/" relativePath() 
-      | relativePath()
+/*@egen*/  <DOC>"(\"" filename() "\")" 
+    (LOOKAHEAD(2)<DOUBLESLASH> relativePath() 
+     | <SINGLELASH> relativePath()
     )/*@bgen(jjtree)*/
    } catch (Throwable jjte000) {
      if (jjtc000) {
@@ -96,18 +97,13 @@ void pathFilter()                : {/*@bgen(jjtree) PF */
 {/*@bgen(jjtree) PF */
    try {
 /*@egen*/  LOOKAHEAD(5)(relativePath() 
-        (    "eq" relativePath() pathFilter2()
-             | "is" relativePath() pathFilter2()
-             | ( "=" 
-                 (  relativePath() pathFilter2()
-                    | "=" relativePath() pathFilter2()
-                 )
-               )
+        (    LOOKAHEAD(2) <EQ> relativePath() pathFilter2()
+             | <IS> relativePath() pathFilter2()
              |pathFilter2()
         )
         )
     | LOOKAHEAD(5)"(" pathFilter() ")" pathFilter2()
-    | "not" pathFilter() pathFilter2()/*@bgen(jjtree)*/
+    | <NOT> pathFilter() pathFilter2()/*@bgen(jjtree)*/
    } catch (Throwable jjte000) {
      if (jjtc000) {
        jjtree.clearNodeScope(jjtn000);
@@ -131,8 +127,8 @@ void pathFilter()                : {/*@bgen(jjtree) PF */
 }
 
 void pathFilter2()          : {}
-{  "and" pathFilter()pathFilter2()
-    | "or" pathFilter()pathFilter2()
+{  <AND> pathFilter()pathFilter2()
+    | <OR> pathFilter()pathFilter2()
         | {}
 }
 
@@ -148,10 +144,10 @@ void relativePath()             :
 {/*@bgen(jjtree) RP */
    try {
 /*@egen*/  tagname() relativePath2()
-    | "*" relativePath2()
-        | "." relativePath2()
-        | ".." relativePath2()
-        | "text()" relativePath2()
+    | <STAR> relativePath2()
+        | LOOKAHEAD(2) <DOT> relativePath2()
+        | <DOUBLEDOT> relativePath2()
+        | <TXT> relativePath2()
         |  "(" relativePath() ")" relativePath2()/*@bgen(jjtree)*/
    } catch (Throwable jjte000) {
      if (jjtc000) {
@@ -177,8 +173,8 @@ void relativePath()             :
 
 void relativePath2()        : {}
 { LOOKAHEAD(2) (
-        "/" relativePath() relativePath2()
-        | "//" relativePath() relativePath2()
+        <SINGLELASH> relativePath() relativePath2()
+        | <DOUBLESLASH> relativePath() relativePath2()
         )
     | "[" pathFilter() "]" relativePath2()
     | LOOKAHEAD(3) "," relativePath() 
@@ -227,8 +223,8 @@ void xQuery()               :
 }
 
 void xQuery2()              :   {}
-{   LOOKAHEAD(2)  ( "/" relativePath() | "//" relativePath() ) xQuery2()
-    | LOOKAHEAD((","<VAR>":=") | (","<VAR>"in")) {}
+{   LOOKAHEAD(2)  ( <SINGLELASH> relativePath() | <DOUBLESLASH> relativePath() ) xQuery2()
+    | LOOKAHEAD((","<VAR><ASSIGN>) | (","<VAR><IN>)) {}
     | "," xQuery() xQuery2()
         | {}
 }
@@ -240,7 +236,7 @@ void forClause()                :   {/*@bgen(jjtree) FORCLAUSE */
 /*@egen*/}
 {/*@bgen(jjtree) FORCLAUSE */
     try {
-/*@egen*/   "for" var() "in" xQuery() ( "," var() "in" xQuery() )*/*@bgen(jjtree)*/
+/*@egen*/   <FOR> var() <IN> xQuery() ( "," var() <IN> xQuery() )*/*@bgen(jjtree)*/
     } catch (Throwable jjte000) {
       if (jjtc000) {
         jjtree.clearNodeScope(jjtn000);
@@ -270,7 +266,7 @@ void letClause()                    :   {/*@bgen(jjtree) #LETCLAUSE(> 1) */
 /*@egen*/}
 {/*@bgen(jjtree) #LETCLAUSE(> 1) */
     try {
-/*@egen*/   "let"  var() ":=" xQuery() ( "," var() ":=" xQuery() )*/*@bgen(jjtree)*/
+/*@egen*/   <LET>  var() <ASSIGN> xQuery() ( "," var() <ASSIGN> xQuery() )*/*@bgen(jjtree)*/
     } catch (Throwable jjte000) {
       if (jjtc000) {
         jjtree.clearNodeScope(jjtn000);
@@ -304,7 +300,7 @@ void whereClause()                      :   {/*@bgen(jjtree) #WHERECLAUSE(> 1) *
 /*@egen*/}
 {/*@bgen(jjtree) #WHERECLAUSE(> 1) */
     try {
-/*@egen*/   "where" cond() 
+/*@egen*/   <WHERE> cond() 
     |/*@bgen(jjtree)*/
       {
         jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 1);
@@ -340,7 +336,7 @@ void returnClause()                     :   {/*@bgen(jjtree) #RETURNCLAUSE(> 1) 
 /*@egen*/}
 {/*@bgen(jjtree) #RETURNCLAUSE(> 1) */
     try {
-/*@egen*/   "return" xQuery()/*@bgen(jjtree)*/
+/*@egen*/   <RETURN> xQuery()/*@bgen(jjtree)*/
     } catch (Throwable jjte000) {
       if (jjtc000) {
         jjtree.clearNodeScope(jjtn000);
@@ -370,18 +366,14 @@ void cond()                     :   {/*@bgen(jjtree) COND */
 /*@egen*/}
 {/*@bgen(jjtree) COND */
   try {
-/*@egen*/ "empty(" xQuery() ")" cond2()
-    | ( "some" var() "in" xQuery() 
-            ( "," var() "in" xQuery() )* "satisfies" cond() cond2()
+/*@egen*/ <EMPTY>"(" xQuery() ")" cond2()
+    | ( <SOME> var() <IN> xQuery() 
+            ( "," var() <IN> xQuery() )* <SATISFIES> cond() cond2()
       )
         |
         ( xQuery() 
-          ( ("=" (  xQuery() cond2() 
-                    | "=" xQuery() cond2() 
-                 )
-            )
-            | "eq" xQuery() cond2() 
-            | "is" xQuery() cond2() 
+          ( LOOKAHEAD(2) <IS> xQuery() cond2() 
+            | <EQ> xQuery() cond2() 
           )
         )/*@bgen(jjtree)*/
   } catch (Throwable jjte000) {
@@ -407,8 +399,8 @@ void cond()                     :   {/*@bgen(jjtree) COND */
 }
 
 void cond2()            :   {}
-{   "and" cond() cond2()
-    | "or" cond() cond2()
+{   <AND> cond() cond2()
+    | <OR> cond() cond2()
         |{}
 }
 
@@ -458,7 +450,7 @@ void var()          :
 /*@egen*/
 }
 
-void string()               :
+String string()               :
 {/*@bgen(jjtree) STRING */
  AST_STRING jjtn000 = new AST_STRING(this, JJTSTRING);
  boolean jjtc000 = true;
@@ -472,7 +464,7 @@ void string()               :
                 jjtree.closeNodeScope(jjtn000, true);
                 jjtc000 = false;
               }
-/*@egen*/{jjtn000.setToken(t.kind,t.image);}/*@bgen(jjtree)*/
+/*@egen*/{jjtn000.setToken(t.kind,t.image);return t.image;}/*@bgen(jjtree)*/
     } finally {
       if (jjtc000) {
         jjtree.closeNodeScope(jjtn000, true);
@@ -506,50 +498,50 @@ Token tagname()              :
 
 SKIP  : { " " | "\t" | "\n" | "\r" }
 
-TOKEN : { < STRING:  "\"" (~[ "\"", "\\" ,"\n" , "\r"])+ "\"" > }
-TOKEN : { < FILENAME: (["a"-"z"] | ["A" - "Z"] | ["0"-"9"] | "_" )+".xml" > }
-TOKEN : { < VAR: "$"(["a"-"z"] | ["A" - "Z"])(["a"-"z"]
-                | ["A" - "Z"] | ["0"-"9"])* >}
-TOKEN : { < TAGNAME: (["a"-"z"] | ["A" - "Z"])+ > }
 
 /* Reserved words */
 TOKEN [IGNORE_CASE]: {
-  < LET: "let">
-| < DOC: "doc"|"document" >
-| < TXT: "text()" >
-| < IN: "in" >
-| < FOR: "for" >
-| < WHERE: "where" >
-| < RETURN: "return" >
-| < EQ: "eq" >
-| < IS: "is" >
-| < EMPTY: "empty" >
-| < SOME: "some" >
-| < SATISFIES: "satisfies" >
-| < AND: "and" >
-| < OR: "or" >
-| < NOT: "not" >
+    < LET: "let">
+        | < DOC: "doc"|"document" >
+        | < TXT: "text()" >
+        | < IN: "in" >
+        | < FOR: "for" >
+        | < WHERE: "where" >
+        | < RETURN: "return" >
+        | < EQ: "eq"|"=" >
+        | < IS: "is"|"==" >
+        | < EMPTY: "empty" >
+        | < SOME: "some" >
+        | < SATISFIES: "satisfies" >
+        | < AND: "and" >
+        | < OR: "or" >
+        | < NOT: "not" >
 }
 
 /* symbols */
 TOKEN: {
-  < SINGLEEQ: "=" >
-| < DOUBLEEQ: "==" >
-| < ASSIGN: ":=" >
-| < STAR: "*" >
-| < COMMA:"," >
-| < DOT: "." >
-| < DOUBLEDOT: ".." >
-| < SEMI:";" >
-| < AT: "@" >
-| < LPAREN: "(" >
-| < RPAREN: ")" >
-| < LAB: "<" >
-| < RAB: ">" >
-| < LCB: "{" >
-| < RCB: "}" >
-| < LBRACE: "[" >
-| < RBRACE: "]" >
-| < SLASH:"/" >
-| < DOUBLESLASH:"//" >
-}
+           //< SINGLEEQ: "=" >
+           //| < DOUBLEEQ: "==" >
+           < ASSIGN: ":=" >
+               |< STAR: "*" >
+               //| < COMMA:"," >
+               | < DOT: "." >
+               | < DOUBLEDOT: ".." >
+               //| < SEMI:";" >
+               //| < AT: "@" >
+               //| < LPAREN: "(" >
+               //| < RPAREN: ")" >
+               //| < LAB: "<" >
+               //| < RAB: ">" >
+               //| < LCB: "{" >
+               //| < RCB: "}" >
+               //| < LBRACE: "[" >
+               //| < RBRACE: "]" >
+               | < SINGLELASH:"/" >
+               | < DOUBLESLASH:"//" >
+       }
+TOKEN : { < FILENAME: (["a"-"z"] | ["A" - "Z"] | ["0"-"9"] | "_" )+".xml" > }
+TOKEN : { < STRING:  "\"" (~[ "\"", "\\" ,"\n" , "\r"])+ "\"" > }
+TOKEN : { < VAR: "$"(["a"-"z"] | ["A" - "Z"])(["a"-"z"]
+                | ["A" - "Z"] | ["0"-"9"])* >}
+TOKEN : { < TAGNAME: (["a"-"z"] | ["A" - "Z"])+ > }
