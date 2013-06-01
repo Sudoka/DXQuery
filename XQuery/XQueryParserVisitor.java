@@ -6,6 +6,8 @@ public interface XQueryParserVisitor
   public Object visit(SimpleNode node, Object data);
   public Object visit(AST_Root node, Object data);
   public Object visit(AST_AP node, Object data);
+  public Object visit(AST_OneSlash node, Object data);
+  public Object visit(AST_DoubleSlash node, Object data);
   public Object visit(AST_PF node, Object data);
   public Object visit(AST_RP node, Object data);
   public Object visit(AST_XQ node, Object data);
@@ -19,4 +21,4 @@ public interface XQueryParserVisitor
   public Object visit(AST_STRING node, Object data);
   public Object visit(AST_TAGNAME node, Object data);
 }
-/* JavaCC - OriginalChecksum=cc576c2304135fe32911221baed9b7ed (do not edit this line) */
+/* JavaCC - OriginalChecksum=972c1b84606365917148ca3bc15b99de (do not edit this line) */

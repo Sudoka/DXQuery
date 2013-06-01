@@ -3,7 +3,7 @@
 package XQuery;
 
 public
-class SimpleNode implements Node {
+class SimpleNode implements Node, XQueryParserTreeConstants {
 
     protected Node parent;
     protected Node[] children;
@@ -16,11 +16,13 @@ class SimpleNode implements Node {
     
     public SimpleNode(int i) {
         id = i;
+        log = new DebugLogger(jjtNodeName[id]);
     }
 
     public SimpleNode(XQueryParser p, int i) {
         this(i);
         parser = p;
+        log = new DebugLogger(jjtNodeName[id]);
     }
 
     public int getId(){

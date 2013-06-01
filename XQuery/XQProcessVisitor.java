@@ -2,19 +2,37 @@
  * 
  */
 package XQuery;
+import org.apache.xerces.parsers.DOMParser;
 
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import java.util.*;
+import java.io.*;
 /**
  * @author QDX
  *
  */
 public class XQProcessVisitor implements XQueryParserVisitor {
 
+    public    DebugLogger log;
+
+    public Node root; 
+    
+    public XQProcessVisitor() {
+    	log = new DebugLogger("XQProcessVisitor");
+	}   
+
 	/* (non-Javadoc)
 	 * @see XQuery.XQueryParserVisitor#visit(XQuery.SimpleNode, java.lang.Object)
 	 */
 	@Override
 	public Object visit(SimpleNode node, Object data) {
-        System.out.println("SimpleNode, only calls when the node is not implemented");
+        log.RegularLog("SimpleNode, only called when the node is not implemented");
         data = node.childrenAccept(this,data);
 		return data;
 	}
@@ -24,7 +42,7 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_Root node, Object data) {
-        System.out.println("Visit: AST_Root");
+        log.RegularLog("Visit: AST_Root");        
         data = node.childrenAccept(this,data);
 		return data;
 	}
@@ -34,7 +52,10 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_AP node, Object data) {
-        System.out.println("Visit: AST_AP");
+        log.RegularLog("Visit: AST_AP");
+        
+         
+        
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -45,7 +66,7 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_PF node, Object data) {
-        System.out.println("Visit: ASP_PF");
+        log.RegularLog("Visit: ASP_PF");
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -56,7 +77,10 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_RP node, Object data) {
-        System.out.println("Visit: AST_RP");
+        log.RegularLog("Visit: AST_RP");
+        for(int i = 0; i < node.jjtGetNumChildren();i++){
+        	log.RegularLog(node.children[i].getText());
+        }
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -67,7 +91,7 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_XQ node, Object data) {
-        System.out.println("Visit: AST_XQ");
+        log.RegularLog("Visit: AST_XQ");
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -78,7 +102,7 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_FORCLAUSE node, Object data) {
-        System.out.println("Visit: AST_FORCLAUSE");
+        log.RegularLog("Visit: AST_FORCLAUSE");
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -89,7 +113,7 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_LETCLAUSE node, Object data) {
-        System.out.println("Visit: AST_LETCLAUSE");
+        log.RegularLog("Visit: AST_LETCLAUSE");
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -100,7 +124,7 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_WHERECLAUSE node, Object data) {
-        System.out.println("Visit: AST_WHERECLAUSE");
+        log.RegularLog("Visit: AST_WHERECLAUSE");
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -111,7 +135,7 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_RETURNCLAUSE node, Object data) {
-        System.out.println("Visit: AST_RETURNCLAUSE");
+        log.RegularLog("Visit: AST_RETURNCLAUSE");
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -122,7 +146,7 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_COND node, Object data) {
-        System.out.println("Visit: AST_COND");
+        log.RegularLog("Visit: AST_COND");
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -133,7 +157,7 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_FILENAME node, Object data) {
-        System.out.println("Visit: AST_FILENAME");
+        log.RegularLog("Visit: AST_FILENAME");
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -144,7 +168,7 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_VAR node, Object data) {
-        System.out.println("Visit: AST_VAR");
+        log.RegularLog("Visit: AST_VAR");
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -155,7 +179,7 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_STRING node, Object data) {
-        System.out.println("Visit: AST_STRING");
+        log.RegularLog("Visit: AST_STRING");
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -166,10 +190,26 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_TAGNAME node, Object data) {
-        System.out.println("Visit: AST_TAGNAME");
+        log.RegularLog("Visit: AST_TAGNAME");
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
+	}
+
+	@Override
+	public Object visit(AST_OneSlash node, Object data) {
+		 log.RegularLog("Visit: AST_OneSlash");
+	        data = node.childrenAccept(this,data);
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visit(AST_DoubleSlash node, Object data) {
+		 log.RegularLog("Visit: AST_DoubleSlash");
+	        data = node.childrenAccept(this,data);
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

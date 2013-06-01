@@ -1,3 +1,0 @@
-@echo off
-call javac RunExamples0_6.java
-call java RunExamples0_6

@@ -13,9 +13,10 @@ PARSER_BEGIN( XQueryParser)
     public class XQueryParser {}
 PARSER_END( XQueryParser)
 
-    SimpleNode query()  #Root       : {}  
+    AST_Root query()  #Root       : {}  
 {
-    ( xQuery() ) { return jjtThis; } 
+    //( xQuery() ) { return jjtThis; } 
+    ( AP() ) { return jjtThis; } 
 } 
 
 void absolutePath() #AP         : 
@@ -23,8 +24,8 @@ void absolutePath() #AP         :
     Token t;
 }
 {  <DOC>"(\"" filename() "\")" 
-    (LOOKAHEAD(2)<DOUBLESLASH> relativePath() 
-     | <SINGLELASH> relativePath()
+    (LOOKAHEAD(2)<DOUBLESLASH>#OneSlash relativePath() 
+     | <SINGLELASH>#DoubleSlash relativePath()
     )
 }
 

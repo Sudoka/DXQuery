@@ -5,24 +5,28 @@ public interface XQueryParserTreeConstants
 {
   public int JJTROOT = 0;
   public int JJTAP = 1;
-  public int JJTPF = 2;
-  public int JJTVOID = 3;
-  public int JJTRP = 4;
-  public int JJTXQ = 5;
-  public int JJTFORCLAUSE = 6;
-  public int JJTLETCLAUSE = 7;
-  public int JJTWHERECLAUSE = 8;
-  public int JJTRETURNCLAUSE = 9;
-  public int JJTCOND = 10;
-  public int JJTFILENAME = 11;
-  public int JJTVAR = 12;
-  public int JJTSTRING = 13;
-  public int JJTTAGNAME = 14;
+  public int JJTONESLASH = 2;
+  public int JJTDOUBLESLASH = 3;
+  public int JJTPF = 4;
+  public int JJTVOID = 5;
+  public int JJTRP = 6;
+  public int JJTXQ = 7;
+  public int JJTFORCLAUSE = 8;
+  public int JJTLETCLAUSE = 9;
+  public int JJTWHERECLAUSE = 10;
+  public int JJTRETURNCLAUSE = 11;
+  public int JJTCOND = 12;
+  public int JJTFILENAME = 13;
+  public int JJTVAR = 14;
+  public int JJTSTRING = 15;
+  public int JJTTAGNAME = 16;
 
 
   public String[] jjtNodeName = {
     "Root",
     "AP",
+    "OneSlash",
+    "DoubleSlash",
     "PF",
     "void",
     "RP",
@@ -38,4 +42,4 @@ public interface XQueryParserTreeConstants
     "TAGNAME",
   };
 }
-/* JavaCC - OriginalChecksum=f0ba04aa8f87e4a314ee3b4af77312a1 (do not edit this line) */
+/* JavaCC - OriginalChecksum=a16b5503d45a87126a9cfe8a13ef1337 (do not edit this line) */

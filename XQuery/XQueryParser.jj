@@ -25,11 +25,12 @@ PARSER_END( XQueryParser)
 {/*@bgen(jjtree) Root */
     try {
 /*@egen*/
-    ( xQuery() )/*@bgen(jjtree)*/
-                 {
-                   jjtree.closeNodeScope(jjtn000, true);
-                   jjtc000 = false;
-                 }
+    //( xQuery() ) { return jjtThis; } 
+    ( absolutePath() )/*@bgen(jjtree)*/
+                       {
+                         jjtree.closeNodeScope(jjtn000, true);
+                         jjtc000 = false;
+                       }
 /*@egen*/ { return jjtn000; }/*@bgen(jjtree)*/
     } catch (Throwable jjte000) {
       if (jjtc000) {
@@ -64,8 +65,34 @@ void absolutePath()             :
 {/*@bgen(jjtree) AP */
    try {
 /*@egen*/  <DOC>"(\"" filename() "\")" 
-    (LOOKAHEAD(2)<DOUBLESLASH> relativePath() 
-     | <SINGLELASH> relativePath()
+    (LOOKAHEAD(2)/*@bgen(jjtree) OneSlash */
+                 {
+                   AST_OneSlash jjtn001 = new AST_OneSlash(this, JJTONESLASH);
+                   boolean jjtc001 = true;
+                   jjtree.openNodeScope(jjtn001);
+                 }
+                 try {
+/*@egen*/<DOUBLESLASH>/*@bgen(jjtree)*/
+                 } finally {
+                   if (jjtc001) {
+                     jjtree.closeNodeScope(jjtn001, true);
+                   }
+                 }
+/*@egen*/          relativePath() 
+     |/*@bgen(jjtree) DoubleSlash */
+       {
+         AST_DoubleSlash jjtn002 = new AST_DoubleSlash(this, JJTDOUBLESLASH);
+         boolean jjtc002 = true;
+         jjtree.openNodeScope(jjtn002);
+       }
+       try {
+/*@egen*/ <SINGLELASH>/*@bgen(jjtree)*/
+       } finally {
+         if (jjtc002) {
+           jjtree.closeNodeScope(jjtn002, true);
+         }
+       }
+/*@egen*/             relativePath()
     )/*@bgen(jjtree)*/
    } catch (Throwable jjte000) {
      if (jjtc000) {

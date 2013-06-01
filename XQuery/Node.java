@@ -35,5 +35,7 @@ interface Node {
 
   /** Accept the visitor. **/
   public Object jjtAccept(XQueryParserVisitor visitor, Object data);
+
+public String getText();
 }
 /* JavaCC - OriginalChecksum=a5419163b8ab0013d81cf0c97e68b159 (do not edit this line) */

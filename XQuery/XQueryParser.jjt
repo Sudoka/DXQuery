@@ -15,7 +15,8 @@ PARSER_END( XQueryParser)
 
     AST_Root query()  #Root       : {}  
 {
-    ( xQuery() ) { return jjtThis; } 
+    //( xQuery() ) { return jjtThis; } 
+    ( absolutePath() ) { return jjtThis; } 
 } 
 
 void absolutePath() #AP         : 
@@ -23,8 +24,8 @@ void absolutePath() #AP         :
     Token t;
 }
 {  <DOC>"(\"" filename() "\")" 
-    (LOOKAHEAD(2)<DOUBLESLASH> relativePath() 
-     | <SINGLELASH> relativePath()
+    (LOOKAHEAD(2)<DOUBLESLASH>#OneSlash relativePath() 
+     | <SINGLELASH>#DoubleSlash relativePath()
     )
 }
 
