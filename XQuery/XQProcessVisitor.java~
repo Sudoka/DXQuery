@@ -21,7 +21,7 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 
     public    DebugLogger log;
 
-    public DOMParser domParser;
+    public Node root; 
     
     public XQProcessVisitor() {
     	log = new DebugLogger("XQProcessVisitor");
@@ -52,9 +52,8 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	 */
 	@Override
 	public Object visit(AST_AP node, Object data) {
-        log.RegularLog("Visit: AST_AP");
+        log.RegularLog("Visit: AST_AP <"+node.jjtGetNumChildren()+">");
         
-        domParser = new DOMParser();        
         
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
@@ -78,6 +77,9 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	@Override
 	public Object visit(AST_RP node, Object data) {
         log.RegularLog("Visit: AST_RP");
+        for(int i = 0; i < node.jjtGetNumChildren();i++){
+        	log.RegularLog(node.children[i].getText());
+        }
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
@@ -156,15 +158,8 @@ public class XQProcessVisitor implements XQueryParserVisitor {
 	public Object visit(AST_FILENAME node, Object data) {
         log.RegularLog("Visit: AST_FILENAME");
         String filename = node.getText();
-        log.DebugLog(filename);
-        try {
-			domParser.parse(filename);
-		} catch (SAXException | IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        data = node.childrenAccept(this,data);
-		// TODO Auto-generated method stub
+        log.DebugLog("Read filename:"+filename);
+        ((AST_AP)node.parent).root = DomOperations.GetRootNodeFromPath(filename);
 		return data;
 	}
 
@@ -199,6 +194,70 @@ public class XQProcessVisitor implements XQueryParserVisitor {
         data = node.childrenAccept(this,data);
 		// TODO Auto-generated method stub
 		return data;
+	}
+
+	@Override
+	public Object visit(AST_DoubleSlash node, Object data) {
+		 log.RegularLog("Visit: AST_DoubleSlash");
+	        data = node.childrenAccept(this,data);
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visit(AST_RP2 node, Object data) {
+		log.RegularLog("Visit: AST_RP2");
+        data = node.childrenAccept(this,data);
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visit(AST_SingleSlash node, Object data) {
+		log.RegularLog("Visit: AST_SingleSlash");
+        data = node.childrenAccept(this,data);
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visit(AST_Comma node, Object data) {
+		log.RegularLog("Visit: AST_Comma");
+        data = node.childrenAccept(this,data);
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visit(AST_Star node, Object data) {
+		log.RegularLog("Visit: AST_Star");
+        data = node.childrenAccept(this,data);
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visit(AST_Dot node, Object data) {
+		log.RegularLog("Visit: AST_Dot");
+        data = node.childrenAccept(this,data);
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visit(AST_DDot node, Object data) {
+		log.RegularLog("Visit: AST_DDot");
+        data = node.childrenAccept(this,data);
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visit(AST_Txt node, Object data) {
+		log.RegularLog("Visit: AST_Txt");
+        data = node.childrenAccept(this,data);
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

@@ -5,31 +5,51 @@ public interface XQueryParserTreeConstants
 {
   public int JJTROOT = 0;
   public int JJTAP = 1;
-  public int JJTONESLASH = 2;
-  public int JJTDOUBLESLASH = 3;
+  public int JJTDOUBLESLASH = 2;
+  public int JJTSINGLESLASH = 3;
   public int JJTPF = 4;
-  public int JJTVOID = 5;
-  public int JJTRP = 6;
-  public int JJTXQ = 7;
-  public int JJTFORCLAUSE = 8;
-  public int JJTLETCLAUSE = 9;
-  public int JJTWHERECLAUSE = 10;
-  public int JJTRETURNCLAUSE = 11;
-  public int JJTCOND = 12;
-  public int JJTFILENAME = 13;
-  public int JJTVAR = 14;
-  public int JJTSTRING = 15;
-  public int JJTTAGNAME = 16;
+  public int JJTEQ = 5;
+  public int JJTIS = 6;
+  public int JJTNOT = 7;
+  public int JJTVOID = 8;
+  public int JJTAND = 9;
+  public int JJTOR = 10;
+  public int JJTRP = 11;
+  public int JJTSTAR = 12;
+  public int JJTDOT = 13;
+  public int JJTDDOT = 14;
+  public int JJTTXT = 15;
+  public int JJTCOMMA = 16;
+  public int JJTXQ = 17;
+  public int JJTFORCLAUSE = 18;
+  public int JJTLETCLAUSE = 19;
+  public int JJTWHERECLAUSE = 20;
+  public int JJTRETURNCLAUSE = 21;
+  public int JJTCOND = 22;
+  public int JJTFILENAME = 23;
+  public int JJTVAR = 24;
+  public int JJTSTRING = 25;
+  public int JJTTAGNAME = 26;
 
 
   public String[] jjtNodeName = {
     "Root",
     "AP",
-    "OneSlash",
     "DoubleSlash",
+    "SingleSlash",
     "PF",
+    "Eq",
+    "Is",
+    "Not",
     "void",
+    "And",
+    "Or",
     "RP",
+    "Star",
+    "Dot",
+    "DDot",
+    "Txt",
+    "Comma",
     "XQ",
     "FORCLAUSE",
     "LETCLAUSE",
@@ -42,4 +62,4 @@ public interface XQueryParserTreeConstants
     "TAGNAME",
   };
 }
-/* JavaCC - OriginalChecksum=a16b5503d45a87126a9cfe8a13ef1337 (do not edit this line) */
+/* JavaCC - OriginalChecksum=b57fead9d6b85c190f15a1b85a4d4f51 (do not edit this line) */

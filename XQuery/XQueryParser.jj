@@ -65,9 +65,9 @@ void absolutePath()             :
 {/*@bgen(jjtree) AP */
    try {
 /*@egen*/  <DOC>"(\"" filename() "\")" 
-    (LOOKAHEAD(2)/*@bgen(jjtree) OneSlash */
+    (LOOKAHEAD(2)/*@bgen(jjtree) DoubleSlash */
                  {
-                   AST_OneSlash jjtn001 = new AST_OneSlash(this, JJTONESLASH);
+                   AST_DoubleSlash jjtn001 = new AST_DoubleSlash(this, JJTDOUBLESLASH);
                    boolean jjtc001 = true;
                    jjtree.openNodeScope(jjtn001);
                  }
@@ -78,10 +78,10 @@ void absolutePath()             :
                      jjtree.closeNodeScope(jjtn001, true);
                    }
                  }
-/*@egen*/          relativePath() 
-     |/*@bgen(jjtree) DoubleSlash */
+/*@egen*/             relativePath() 
+     |/*@bgen(jjtree) SingleSlash */
        {
-         AST_DoubleSlash jjtn002 = new AST_DoubleSlash(this, JJTDOUBLESLASH);
+         AST_SingleSlash jjtn002 = new AST_SingleSlash(this, JJTSINGLESLASH);
          boolean jjtc002 = true;
          jjtree.openNodeScope(jjtn002);
        }
@@ -124,13 +124,52 @@ void pathFilter()                : {/*@bgen(jjtree) PF */
 {/*@bgen(jjtree) PF */
    try {
 /*@egen*/  LOOKAHEAD(5)(relativePath() 
-        (    LOOKAHEAD(2) <EQ> relativePath() pathFilter2()
-             | <IS> relativePath() pathFilter2()
+        (    LOOKAHEAD(2)/*@bgen(jjtree) Eq */
+                          {
+                            AST_Eq jjtn001 = new AST_Eq(this, JJTEQ);
+                            boolean jjtc001 = true;
+                            jjtree.openNodeScope(jjtn001);
+                          }
+                          try {
+/*@egen*/ <EQ>/*@bgen(jjtree)*/
+                          } finally {
+                            if (jjtc001) {
+                              jjtree.closeNodeScope(jjtn001, true);
+                            }
+                          }
+/*@egen*/    relativePath() pathFilter2()
+             |/*@bgen(jjtree) Is */
+               {
+                 AST_Is jjtn002 = new AST_Is(this, JJTIS);
+                 boolean jjtc002 = true;
+                 jjtree.openNodeScope(jjtn002);
+               }
+               try {
+/*@egen*/ <IS>/*@bgen(jjtree)*/
+               } finally {
+                 if (jjtc002) {
+                   jjtree.closeNodeScope(jjtn002, true);
+                 }
+               }
+/*@egen*/    relativePath() pathFilter2()
              |pathFilter2()
         )
         )
     | LOOKAHEAD(5)"(" pathFilter() ")" pathFilter2()
-    | <NOT> pathFilter() pathFilter2()/*@bgen(jjtree)*/
+    |/*@bgen(jjtree) Not */
+      {
+        AST_Not jjtn003 = new AST_Not(this, JJTNOT);
+        boolean jjtc003 = true;
+        jjtree.openNodeScope(jjtn003);
+      }
+      try {
+/*@egen*/ <NOT>/*@bgen(jjtree)*/
+      } finally {
+        if (jjtc003) {
+          jjtree.closeNodeScope(jjtn003, true);
+        }
+      }
+/*@egen*/     pathFilter() pathFilter2()/*@bgen(jjtree)*/
    } catch (Throwable jjte000) {
      if (jjtc000) {
        jjtree.clearNodeScope(jjtn000);
@@ -154,8 +193,34 @@ void pathFilter()                : {/*@bgen(jjtree) PF */
 }
 
 void pathFilter2()          : {}
-{  <AND> pathFilter()pathFilter2()
-    | <OR> pathFilter()pathFilter2()
+{/*@bgen(jjtree) And */
+   {
+     AST_And jjtn001 = new AST_And(this, JJTAND);
+     boolean jjtc001 = true;
+     jjtree.openNodeScope(jjtn001);
+   }
+   try {
+/*@egen*/  <AND>/*@bgen(jjtree)*/
+   } finally {
+     if (jjtc001) {
+       jjtree.closeNodeScope(jjtn001, true);
+     }
+   }
+/*@egen*/     pathFilter()pathFilter2()
+    |/*@bgen(jjtree) Or */
+      {
+        AST_Or jjtn002 = new AST_Or(this, JJTOR);
+        boolean jjtc002 = true;
+        jjtree.openNodeScope(jjtn002);
+      }
+      try {
+/*@egen*/ <OR>/*@bgen(jjtree)*/
+      } finally {
+        if (jjtc002) {
+          jjtree.closeNodeScope(jjtn002, true);
+        }
+      }
+/*@egen*/    pathFilter()pathFilter2()
         | {}
 }
 
@@ -171,10 +236,62 @@ void relativePath()             :
 {/*@bgen(jjtree) RP */
    try {
 /*@egen*/  tagname() relativePath2()
-    | <STAR> relativePath2()
-        | LOOKAHEAD(2) <DOT> relativePath2()
-        | <DOUBLEDOT> relativePath2()
-        | <TXT> relativePath2()
+    |/*@bgen(jjtree) Star */
+      {
+        AST_Star jjtn001 = new AST_Star(this, JJTSTAR);
+        boolean jjtc001 = true;
+        jjtree.openNodeScope(jjtn001);
+      }
+      try {
+/*@egen*/ <STAR>/*@bgen(jjtree)*/
+      } finally {
+        if (jjtc001) {
+          jjtree.closeNodeScope(jjtn001, true);
+        }
+      }
+/*@egen*/      relativePath2()
+        | LOOKAHEAD(2)/*@bgen(jjtree) Dot */
+                       {
+                         AST_Dot jjtn002 = new AST_Dot(this, JJTDOT);
+                         boolean jjtc002 = true;
+                         jjtree.openNodeScope(jjtn002);
+                       }
+                       try {
+/*@egen*/ <DOT>/*@bgen(jjtree)*/
+                       } finally {
+                         if (jjtc002) {
+                           jjtree.closeNodeScope(jjtn002, true);
+                         }
+                       }
+/*@egen*/     relativePath2()
+        |/*@bgen(jjtree) DDot */
+          {
+            AST_DDot jjtn003 = new AST_DDot(this, JJTDDOT);
+            boolean jjtc003 = true;
+            jjtree.openNodeScope(jjtn003);
+          }
+          try {
+/*@egen*/ <DOUBLEDOT>/*@bgen(jjtree)*/
+          } finally {
+            if (jjtc003) {
+              jjtree.closeNodeScope(jjtn003, true);
+            }
+          }
+/*@egen*/      relativePath2()
+        |/*@bgen(jjtree) Txt */
+          {
+            AST_Txt jjtn004 = new AST_Txt(this, JJTTXT);
+            boolean jjtc004 = true;
+            jjtree.openNodeScope(jjtn004);
+          }
+          try {
+/*@egen*/ <TXT>/*@bgen(jjtree)*/
+          } finally {
+            if (jjtc004) {
+              jjtree.closeNodeScope(jjtn004, true);
+            }
+          }
+/*@egen*/     relativePath2()
         |  "(" relativePath() ")" relativePath2()/*@bgen(jjtree)*/
    } catch (Throwable jjte000) {
      if (jjtc000) {
@@ -198,13 +315,52 @@ void relativePath()             :
 /*@egen*/ 
 }
 
-void relativePath2()        : {}
-{ LOOKAHEAD(2) (
-        <SINGLELASH> relativePath() relativePath2()
-        | <DOUBLESLASH> relativePath() relativePath2()
+void relativePath2()      : {}
+{ LOOKAHEAD(2) (/*@bgen(jjtree) SingleSlash */
+        {
+          AST_SingleSlash jjtn001 = new AST_SingleSlash(this, JJTSINGLESLASH);
+          boolean jjtc001 = true;
+          jjtree.openNodeScope(jjtn001);
+        }
+        try {
+/*@egen*/
+        <SINGLELASH>/*@bgen(jjtree)*/
+        } finally {
+          if (jjtc001) {
+            jjtree.closeNodeScope(jjtn001, true);
+          }
+        }
+/*@egen*/             relativePath() relativePath2()
+        |/*@bgen(jjtree) DoubleSlash */
+          {
+            AST_DoubleSlash jjtn002 = new AST_DoubleSlash(this, JJTDOUBLESLASH);
+            boolean jjtc002 = true;
+            jjtree.openNodeScope(jjtn002);
+          }
+          try {
+/*@egen*/ <DOUBLESLASH>/*@bgen(jjtree)*/
+          } finally {
+            if (jjtc002) {
+              jjtree.closeNodeScope(jjtn002, true);
+            }
+          }
+/*@egen*/             relativePath() relativePath2()
         )
     | "[" pathFilter() "]" relativePath2()
-    | LOOKAHEAD(3) "," relativePath() 
+    | LOOKAHEAD(3)/*@bgen(jjtree) Comma */
+                   {
+                     AST_Comma jjtn003 = new AST_Comma(this, JJTCOMMA);
+                     boolean jjtc003 = true;
+                     jjtree.openNodeScope(jjtn003);
+                   }
+                   try {
+/*@egen*/ ","/*@bgen(jjtree)*/
+                   } finally {
+                     if (jjtc003) {
+                       jjtree.closeNodeScope(jjtn003, true);
+                     }
+                   }
+/*@egen*/       relativePath() 
     | {}
 }
 
@@ -399,8 +555,34 @@ void cond()                     :   {/*@bgen(jjtree) COND */
       )
         |
         ( xQuery() 
-          ( LOOKAHEAD(2) <IS> xQuery() cond2() 
-            | <EQ> xQuery() cond2() 
+          ( LOOKAHEAD(2)/*@bgen(jjtree) Is */
+                         {
+                           AST_Is jjtn001 = new AST_Is(this, JJTIS);
+                           boolean jjtc001 = true;
+                           jjtree.openNodeScope(jjtn001);
+                         }
+                         try {
+/*@egen*/ <IS>/*@bgen(jjtree)*/
+                         } finally {
+                           if (jjtc001) {
+                             jjtree.closeNodeScope(jjtn001, true);
+                           }
+                         }
+/*@egen*/    xQuery() cond2() 
+            |/*@bgen(jjtree) Eq */
+              {
+                AST_Eq jjtn002 = new AST_Eq(this, JJTEQ);
+                boolean jjtc002 = true;
+                jjtree.openNodeScope(jjtn002);
+              }
+              try {
+/*@egen*/ <EQ>/*@bgen(jjtree)*/
+              } finally {
+                if (jjtc002) {
+                  jjtree.closeNodeScope(jjtn002, true);
+                }
+              }
+/*@egen*/    xQuery() cond2() 
           )
         )/*@bgen(jjtree)*/
   } catch (Throwable jjte000) {

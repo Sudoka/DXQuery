@@ -24,25 +24,25 @@ void absolutePath() #AP         :
     Token t;
 }
 {  <DOC>"(\"" filename() "\")" 
-    (LOOKAHEAD(2)<DOUBLESLASH>#OneSlash relativePath() 
-     | <SINGLELASH>#DoubleSlash relativePath()
+    (LOOKAHEAD(2)<DOUBLESLASH>#DoubleSlash relativePath() 
+     | <SINGLELASH>#SingleSlash relativePath()
     )
 }
 
 void pathFilter()   #PF          : {}
 {  LOOKAHEAD(5)(relativePath() 
-        (    LOOKAHEAD(2) <EQ> relativePath() pathFilter2()
-             | <IS> relativePath() pathFilter2()
+        (    LOOKAHEAD(2) <EQ>#Eq relativePath() pathFilter2()
+             | <IS>#Is relativePath() pathFilter2()
              |pathFilter2()
         )
         )
     | LOOKAHEAD(5)"(" pathFilter() ")" pathFilter2()
-    | <NOT> pathFilter() pathFilter2()
+    | <NOT>#Not pathFilter() pathFilter2()
 }
 
 void pathFilter2()  #void   : {}
-{  <AND> pathFilter()pathFilter2()
-    | <OR> pathFilter()pathFilter2()
+{  <AND>#And pathFilter()pathFilter2()
+    | <OR>#Or pathFilter()pathFilter2()
         | {}
 }
 
@@ -52,20 +52,20 @@ void relativePath() #RP         :
     Token t;
 }    
 {  tagname() relativePath2()
-    | <STAR> relativePath2()
-        | LOOKAHEAD(2) <DOT> relativePath2()
-        | <DOUBLEDOT> relativePath2()
-        | <TXT> relativePath2()
+    | <STAR>#Star relativePath2()
+        | LOOKAHEAD(2) <DOT>#Dot relativePath2()
+        | <DOUBLEDOT>#DDot relativePath2()
+        | <TXT>#Txt relativePath2()
         |  "(" relativePath() ")" relativePath2() 
 }
 
-void relativePath2() #void  : {}
+void relativePath2() #void: {}
 { LOOKAHEAD(2) (
-        <SINGLELASH> relativePath() relativePath2()
-        | <DOUBLESLASH> relativePath() relativePath2()
+        <SINGLELASH>#SingleSlash relativePath() relativePath2()
+        | <DOUBLESLASH>#DoubleSlash relativePath() relativePath2()
         )
     | "[" pathFilter() "]" relativePath2()
-    | LOOKAHEAD(3) "," relativePath() 
+    | LOOKAHEAD(3) ","#Comma relativePath() 
     | {}
 }
 
@@ -119,8 +119,8 @@ void cond()         #COND       :   {}
       )
         |
         ( xQuery() 
-          ( LOOKAHEAD(2) <IS> xQuery() cond2() 
-            | <EQ> xQuery() cond2() 
+          ( LOOKAHEAD(2) <IS>#Is xQuery() cond2() 
+            | <EQ>#Eq xQuery() cond2() 
           )
         )
 }

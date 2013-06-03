@@ -94,7 +94,10 @@ class SimpleNode implements Node, XQueryParserTreeConstants {
        out its children. */
 
     public void dump(String prefix) {
-        System.out.println(toString(prefix));
+    	if(getText() != null)
+    		System.out.println(toString(prefix)+":"+getText()+"<"+jjtGetNumChildren()+">");
+    	else
+    		System.out.println(toString(prefix)+"<"+jjtGetNumChildren()+">");
         if (children != null) {
             for (int i = 0; i < children.length; ++i) {
                 SimpleNode n = (SimpleNode)children[i];

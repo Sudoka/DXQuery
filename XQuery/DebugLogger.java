@@ -50,6 +50,19 @@ public class DebugLogger {
 
 	/**
 	 * 
+	 * @param regular
+	 * @param debug
+	 * @param error
+	 */
+	public void SetObjectControl(boolean regular, boolean debug,
+			boolean error) {
+		RegularLog = regular;
+		DebugLog = debug;
+		ErrorLog = error;
+	}
+	
+	/**
+	 * 
 	 * @param type
 	 * @return
 	 */

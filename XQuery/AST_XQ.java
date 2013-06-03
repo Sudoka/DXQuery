@@ -2,20 +2,22 @@
 /* JavaCCOptions:MULTI=true,NODE_USES_PARSER=true,VISITOR=true,TRACK_TOKENS=false,NODE_PREFIX=AST_,NODE_EXTENDS=,NODE_FACTORY=,SUPPORT_CLASS_VISIBILITY_PUBLIC=true */
 package XQuery;
 
-public
-class AST_XQ extends SimpleNode {
-  public AST_XQ(int id) {
-    super(id);
-  }
+public class AST_XQ extends SimpleNode {
 
-  public AST_XQ(XQueryParser p, int id) {
-    super(p, id);
-  }
+	public AST_XQ(int id) {
+		super(id);
+	}
 
+	public AST_XQ(XQueryParser p, int id) {
+		super(p, id);
+	}
 
-  /** Accept the visitor. **/
-  public Object jjtAccept(XQueryParserVisitor visitor, Object data) {
-    return visitor.visit(this, data);
-  }
+	/** Accept the visitor. **/
+	public Object jjtAccept(XQueryParserVisitor visitor, Object data) {
+		return visitor.visit(this, data);
+	}
 }
-/* JavaCC - OriginalChecksum=225adff80beb6b8f6e48d5a185c93752 (do not edit this line) */
+/*
+ * JavaCC - OriginalChecksum=225adff80beb6b8f6e48d5a185c93752 (do not edit this
+ * line)
+ */
