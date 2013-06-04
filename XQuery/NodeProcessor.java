@@ -481,7 +481,32 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 
 	private boolean CheckListISWrapper(ArrayList<Object> listA,
 			ArrayList<Object> listB) {
-		// TODO: add implementation of IS operation!
+		// Warning: here we treat two nulls as equal
+		if (listA == null || listB == null) {
+			// Warning: here we treat two nulls as equal
+			if (listA == null && listB == null)
+				return true;
+			// if one is null while the other is not,return false
+			else
+				return false;
+		}
+		for (int i = 0; i < listA.size(); i++) {
+			for (int j = 0; j < listB.size(); j++) {
+				Object A = listA.get(i);
+				Object B = listB.get(j);
+				if (A instanceof Node && B instanceof Node) {
+					if (((Node) A).isSameNode((Node) B)) {
+						return true;
+					}
+				} else {
+					if (A instanceof String && B instanceof String) {
+						if (A.equals(B)) {
+							return true;
+						}
+					}
+				}
+			}
+		}
 		return true;
 	}
 
@@ -493,27 +518,28 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 			// Warning: here we treat two nulls as equal
 			if (listA == null && listB == null)
 				return true;
+			// if one is null while the other is not,return false
 			else
 				return false;
 		}
-		if (!(listA.size() == listB.size())) {
-			return false;
-		}
 		for (int i = 0; i < listA.size(); i++) {
-			Object A = listA.get(i);
-			Object B = listB.get(i);
-			/*
-			 * only support two node list, if the lists are String list, default
-			 * false
-			 */
-			if (!(A instanceof Node && B instanceof Node)) {
-				return false;
-			}
-			if (!CheckEQ((Node) A, (Node) B)) {
-				return false;
+			for (int j = 0; j < listB.size(); j++) {
+				Object A = listA.get(i);
+				Object B = listB.get(j);
+				if (A instanceof Node && B instanceof Node) {
+					if (CheckEQ((Node) A, (Node) B)) {
+						return true;
+					}
+				} else {
+					if (A instanceof String && B instanceof String) {
+						if (A.equals(B)) {
+							return true;
+						}
+					}
+				}
 			}
 		}
-		return true;
+		return false;
 	}
 
 	private boolean CheckEQ(Node a, Node b) {
@@ -524,11 +550,15 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 			else
 				return false;
 		}
-		if (!a.getNodeName().equals(b.getNodeName())) {
+		if (!a.getNodeName().equals(b.getNodeName())
+				|| a.getChildNodes().getLength() != b.getChildNodes()
+						.getLength() || a.getNodeType() != b.getNodeType()) {
 			return false;
 		}
-		if (!(a.getChildNodes().getLength() == b.getChildNodes().getLength())) {
-			return false;
+		if (a.getNodeType() == Node.TEXT_NODE) {
+			if (!a.getNodeValue().equals(b.getNodeValue())) {
+				return false;
+			}
 		}
 		NodeList alist = a.getChildNodes();
 		NodeList blist = b.getChildNodes();

@@ -45,7 +45,7 @@ public class Run implements XQueryParserTreeConstants {
 		String teststr = "\t\n";
 		System.out.println(teststr.trim().length());
 
-		String testAP = "doc(\"bib.xml\")/bib/book[not(as and title)]/title";
+		String testAP = "doc(\"bib.xml\")/bib//(book,reviews)[title == title]";
 		new Run().runQuery(testAP);
 	}
 
