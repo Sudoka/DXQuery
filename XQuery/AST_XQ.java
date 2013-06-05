@@ -4,6 +4,8 @@ package XQuery;
 
 public class AST_XQ extends SimpleNode {
 
+	DebugLogger log = new DebugLogger("AST_XQ");
+
 	public AST_XQ(int id) {
 		super(id);
 	}
@@ -16,6 +18,7 @@ public class AST_XQ extends SimpleNode {
 	public Object jjtAccept(XQueryParserVisitor visitor, Object data) {
 		return visitor.visit(this, data);
 	}
+
 }
 /*
  * JavaCC - OriginalChecksum=225adff80beb6b8f6e48d5a185c93752 (do not edit this

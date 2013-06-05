@@ -9,10 +9,10 @@
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
     try {
-      absolutePath();
-                         jjtree.closeNodeScope(jjtn000, true);
-                         jjtc000 = false;
-                         {if (true) return jjtn000;}
+      xQuery();
+                   jjtree.closeNodeScope(jjtn000, true);
+                   jjtc000 = false;
+                   {if (true) return jjtn000;}
     } catch (Throwable jjte000) {
       if (jjtc000) {
         jjtree.clearNodeScope(jjtn000);
@@ -383,7 +383,6 @@
                      }
           }
           relativePath();
-          relativePath2();
         } else {
 
         }
@@ -517,7 +516,6 @@
         }
         }
         xQuery();
-        xQuery2();
         break;
       default:
         jj_la1[10] = jj_gen;
@@ -648,7 +646,7 @@
   }
 
   final public void whereClause() throws ParseException {
-                                             /*@bgen(jjtree) #WHERECLAUSE(> 1) */
+                                             /*@bgen(jjtree) #WHERECLAUSE(> 0) */
   AST_WHERECLAUSE jjtn000 = new AST_WHERECLAUSE(this, JJTWHERECLAUSE);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
@@ -660,7 +658,7 @@
         break;
       default:
         jj_la1[14] = jj_gen;
-        jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 1);
+        jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 0);
         jjtc000 = false;
 
       }
@@ -680,13 +678,13 @@
       {if (true) throw (Error)jjte000;}
     } finally {
       if (jjtc000) {
-        jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 1);
+        jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 0);
       }
     }
   }
 
   final public void returnClause() throws ParseException {
-                                             /*@bgen(jjtree) #RETURNCLAUSE(> 1) */
+                                             /*@bgen(jjtree) #RETURNCLAUSE(> 0) */
   AST_RETURNCLAUSE jjtn000 = new AST_RETURNCLAUSE(this, JJTRETURNCLAUSE);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
@@ -709,7 +707,7 @@
       {if (true) throw (Error)jjte000;}
     } finally {
       if (jjtc000) {
-        jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 1);
+        jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 0);
       }
     }
   }
@@ -1073,7 +1071,6 @@
   private boolean jj_3_7() {
     if (jj_scan_token(7)) return true;
     if (jj_3R_4()) return true;
-    if (jj_3R_9()) return true;
     return false;
   }
 

@@ -2,9 +2,7 @@ package XQuery;
 
 import org.apache.xerces.parsers.DOMParser;
 
-import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -20,6 +18,10 @@ public class DomOperations {
 	public static final int RP_RECURSIVE_FETCH = 2;
 
 	public static DebugLogger log = new DebugLogger("DomOperations");
+
+	public DomOperations() {
+
+	}
 
 	public static Node GetRootNodeFromPath(String path) {
 		DOMParser p = new DOMParser();
@@ -41,7 +43,7 @@ public class DomOperations {
 		// not happen, mind!
 		ArrayList<Node> resultList = new ArrayList<Node>();
 		if (root.getNodeName().equals(tag)) {
-			log.DebugLog(root.getNodeName() + "?" + tag);
+			// log.DebugLog(root.getNodeName() + "?" + tag);
 			resultList.add(root);
 		}
 		NodeList children = root.getChildNodes();

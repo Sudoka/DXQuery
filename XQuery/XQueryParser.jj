@@ -25,12 +25,11 @@ PARSER_END( XQueryParser)
 {/*@bgen(jjtree) Root */
     try {
 /*@egen*/
-    //( xQuery() ) { return jjtThis; } 
-    ( absolutePath() )/*@bgen(jjtree)*/
-                       {
-                         jjtree.closeNodeScope(jjtn000, true);
-                         jjtc000 = false;
-                       }
+    ( xQuery() )/*@bgen(jjtree)*/
+                 {
+                   jjtree.closeNodeScope(jjtn000, true);
+                   jjtc000 = false;
+                 }
 /*@egen*/ { return jjtn000; }/*@bgen(jjtree)*/
     } catch (Throwable jjte000) {
       if (jjtc000) {
@@ -52,6 +51,7 @@ PARSER_END( XQueryParser)
       }
     }
 /*@egen*/ 
+    //( absolutePath() ) { return jjtThis; } 
 } 
 
 void absolutePath()             : 
@@ -359,7 +359,7 @@ void relativePath2()      : {}
                        jjtree.closeNodeScope(jjtn003, true);
                      }
                    }
-/*@egen*/       relativePath() relativePath2()
+/*@egen*/       relativePath()
     | {}
 }
 
@@ -447,7 +447,7 @@ void xQuery2()              :   {}
           jjtree.closeNodeScope(jjtn003, true);
         }
       }
-/*@egen*/       xQuery() xQuery2()
+/*@egen*/       xQuery()
     | {}
 }
 
@@ -541,17 +541,17 @@ void letClauseWithEmpty()              :   {}
 { letClause() | {}
 }
 
-void whereClause()                      :   {/*@bgen(jjtree) #WHERECLAUSE(> 1) */
+void whereClause()                      :   {/*@bgen(jjtree) #WHERECLAUSE(> 0) */
   AST_WHERECLAUSE jjtn000 = new AST_WHERECLAUSE(this, JJTWHERECLAUSE);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
 /*@egen*/}
-{/*@bgen(jjtree) #WHERECLAUSE(> 1) */
+{/*@bgen(jjtree) #WHERECLAUSE(> 0) */
     try {
 /*@egen*/   <WHERE> cond() 
     |/*@bgen(jjtree)*/
       {
-        jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 1);
+        jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 0);
         jjtc000 = false;
       }
 /*@egen*/ {}/*@bgen(jjtree)*/
@@ -571,18 +571,18 @@ void whereClause()                      :   {/*@bgen(jjtree) #WHERECLAUSE(> 1) *
       throw (Error)jjte000;
     } finally {
       if (jjtc000) {
-        jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 1);
+        jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 0);
       }
     }
 /*@egen*/
 }
 
-void returnClause()                     :   {/*@bgen(jjtree) #RETURNCLAUSE(> 1) */
+void returnClause()                     :   {/*@bgen(jjtree) #RETURNCLAUSE(> 0) */
   AST_RETURNCLAUSE jjtn000 = new AST_RETURNCLAUSE(this, JJTRETURNCLAUSE);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
 /*@egen*/}
-{/*@bgen(jjtree) #RETURNCLAUSE(> 1) */
+{/*@bgen(jjtree) #RETURNCLAUSE(> 0) */
     try {
 /*@egen*/   <RETURN> xQuery()/*@bgen(jjtree)*/
     } catch (Throwable jjte000) {
@@ -601,7 +601,7 @@ void returnClause()                     :   {/*@bgen(jjtree) #RETURNCLAUSE(> 1) 
       throw (Error)jjte000;
     } finally {
       if (jjtc000) {
-        jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 1);
+        jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 0);
       }
     }
 /*@egen*/

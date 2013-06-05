@@ -15,8 +15,8 @@ PARSER_END( XQueryParser)
 
     AST_Root query()  #Root       : {}  
 {
-    //( xQuery() ) { return jjtThis; } 
-    ( absolutePath() ) { return jjtThis; } 
+    ( xQuery() ) { return jjtThis; } 
+    //( absolutePath() ) { return jjtThis; } 
 } 
 
 void absolutePath() #AP         : 
@@ -103,12 +103,12 @@ void letClauseWithEmpty()     #void    :   {}
 { letClause() | {}
 }
 
-void whereClause()  #WHERECLAUSE(>1)    :   {}
+void whereClause()  #WHERECLAUSE(>0)    :   {}
 {   <WHERE> cond() 
     | {}
 }
 
-void returnClause() #RETURNCLAUSE(>1)   :   {}
+void returnClause() #RETURNCLAUSE(>0)   :   {}
 {   <RETURN> xQuery()
 }
 

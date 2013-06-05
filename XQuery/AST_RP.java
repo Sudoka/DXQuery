@@ -2,20 +2,64 @@
 /* JavaCCOptions:MULTI=true,NODE_USES_PARSER=true,VISITOR=true,TRACK_TOKENS=false,NODE_PREFIX=AST_,NODE_EXTENDS=,NODE_FACTORY=,SUPPORT_CLASS_VISIBILITY_PUBLIC=true */
 package XQuery;
 
-public
-class AST_RP extends SimpleNode {
-  public AST_RP(int id) {
-    super(id);
-  }
+import java.util.ArrayList;
+import org.w3c.dom.Node;
 
-  public AST_RP(XQueryParser p, int id) {
-    super(p, id);
-  }
+public class AST_RP extends SimpleNode {
+	public AST_RP(int id) {
+		super(id);
+	}
 
+	public AST_RP(XQueryParser p, int id) {
+		super(p, id);
+	}
 
-  /** Accept the visitor. **/
-  public Object jjtAccept(XQueryParserVisitor visitor, Object data) {
-    return visitor.visit(this, data);
-  }
+	/** Accept the visitor. **/
+	public Object jjtAccept(XQueryParserVisitor visitor, Object data) {
+		return visitor.visit(this, data);
+	}
+
+	public VariableKeeper EvaluateRPUnderVariable(VariableKeeper var,
+			AST_RP node, int domOperation) {
+		NodeProcessor np = new NodeProcessor();
+		ArrayList<Object> allNodes = new ArrayList<Object>();
+		if (var.GetName() == null || var.GetName() == "") {
+			if (var.GetName() == "") {
+				log.ErrorLog("In EvaluateRP, got empty variable binding,"
+						+ " this should not happen!");
+			}
+			for (Node o : var.GetNodes()) {
+				allNodes.addAll(np.ProcessRP(node, o, domOperation));
+			}
+			VariableKeeper result = new VariableKeeper();
+			result.SimpleAddNodeList(allNodes);
+			return result;
+		} else {
+			VariableKeeper result = new VariableKeeper();
+			// iterate over all the parent nodes
+			for (Node o : var.GetNodes()) {
+				// for each parent node, evaluate RP under it and get the result
+				ArrayList<Object> tmpRPresult = np.ProcessRP(node, o,
+						domOperation);
+				// get the linked data of node o
+				ArrayList<VarNode> linkData = new ArrayList<VarNode>();
+				linkData.addAll(var.GetLinkData(o));
+
+				// iterate over the result got from RP
+				for (Object ob : tmpRPresult) {
+					Node n = (Node) ob;
+					VarNode vn = new VarNode("", n);
+					linkData.add(vn);
+					result.AddNodeWithLink(n, linkData);
+					assert (result.GetLinkData(n).size()
+							- var.GetLinkData(o).size() == 1);
+				}
+			}
+			return result;
+		}
+	}
 }
-/* JavaCC - OriginalChecksum=e206f3b0715eb7e4875621802238ab3b (do not edit this line) */
+/*
+ * JavaCC - OriginalChecksum=e206f3b0715eb7e4875621802238ab3b (do not edit this
+ * line)
+ */
