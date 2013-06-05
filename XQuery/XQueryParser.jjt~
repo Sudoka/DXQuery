@@ -46,7 +46,6 @@ void pathFilter2()  #void   : {}
         | {}
 }
 
-
 void relativePath() #RP         : 
 {
     Token t;
@@ -65,7 +64,7 @@ void relativePath2() #void: {}
         | <DOUBLESLASH>#DoubleSlash relativePath() relativePath2()
         )
     | "[" pathFilter() "]" relativePath2()
-    | LOOKAHEAD(3) ","#Comma relativePath() 
+    | LOOKAHEAD(3) ","#Comma relativePath()
     | {}
 }
 
@@ -79,24 +78,25 @@ void xQuery()       #XQ     :
         | "(" xQuery() ")" xQuery2()
         | "<" tagname() ">" "{"   xQuery()  "}" "</" tagname() ">" xQuery2()
         | forClause() letClauseWithEmpty() whereClause() returnClause() xQuery2()
-        | letClause() xQuery()
+        | letClause() xQuery() xQuery2()
         | var() xQuery2()
         | string() xQuery2()
 }
 
 void xQuery2()      #void   :   {}
-{   LOOKAHEAD(2)  ( <SINGLELASH> relativePath() | <DOUBLESLASH> relativePath() ) xQuery2()
+{   LOOKAHEAD(2) ( <SINGLELASH>#SingleSlash relativePath() 
+        | <DOUBLESLASH>#DoubleSlash relativePath() ) xQuery2()
     | LOOKAHEAD((","<VAR><ASSIGN>) | (","<VAR><IN>)) {}
-    | "," xQuery() xQuery2()
-        | {}
+    | ","#Comma xQuery()
+    | {}
 }
 
 void forClause()    #FORCLAUSE  :   {}
-{   <FOR> var() <IN> xQuery() ( "," var() <IN> xQuery() )*
+{   <FOR> var() <IN> xQuery() ( ","#Comma var() <IN> xQuery() )*
 }
 
 void letClause()    #LETCLAUSE(>1)  :   {}
-{   <LET>  var() <ASSIGN> xQuery() ( "," var() <ASSIGN> xQuery() )*
+{   <LET>  var() <ASSIGN> xQuery() ( ","#Comma var() <ASSIGN> xQuery() )*
 }
 
 void letClauseWithEmpty()     #void    :   {}
@@ -115,12 +115,12 @@ void returnClause() #RETURNCLAUSE(>1)   :   {}
 void cond()         #COND       :   {}
 { <EMPTY>"(" xQuery() ")" cond2()
     | ( <SOME> var() <IN> xQuery() 
-            ( "," var() <IN> xQuery() )* <SATISFIES> cond() cond2()
+            ( ","#Comma var() <IN> xQuery() )* <SATISFIES> cond() cond2()
       )
         |
         ( xQuery() 
-          ( LOOKAHEAD(2) <IS> xQuery() cond2() 
-            | <EQ> xQuery() cond2() 
+          ( LOOKAHEAD(2) <IS>#Is xQuery() cond2() 
+            | <EQ>#Eq xQuery() cond2() 
           )
         )
 }

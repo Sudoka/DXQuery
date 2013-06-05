@@ -224,7 +224,6 @@ void pathFilter2()          : {}
         | {}
 }
 
-
 void relativePath()             : 
 {/*@bgen(jjtree) RP */
     AST_RP jjtn000 = new AST_RP(this, JJTRP);
@@ -360,7 +359,7 @@ void relativePath2()      : {}
                        jjtree.closeNodeScope(jjtn003, true);
                      }
                    }
-/*@egen*/       relativePath() 
+/*@egen*/       relativePath() relativePath2()
     | {}
 }
 
@@ -380,7 +379,7 @@ void xQuery()               :
         | "(" xQuery() ")" xQuery2()
         | "<" tagname() ">" "{"   xQuery()  "}" "</" tagname() ">" xQuery2()
         | forClause() letClauseWithEmpty() whereClause() returnClause() xQuery2()
-        | letClause() xQuery()
+        | letClause() xQuery() xQuery2()
         | var() xQuery2()
         | string() xQuery2()/*@bgen(jjtree)*/
     } catch (Throwable jjte000) {
@@ -406,10 +405,50 @@ void xQuery()               :
 }
 
 void xQuery2()              :   {}
-{   LOOKAHEAD(2)  ( <SINGLELASH> relativePath() | <DOUBLESLASH> relativePath() ) xQuery2()
+{   LOOKAHEAD(2) (/*@bgen(jjtree) SingleSlash */
+                   {
+                     AST_SingleSlash jjtn001 = new AST_SingleSlash(this, JJTSINGLESLASH);
+                     boolean jjtc001 = true;
+                     jjtree.openNodeScope(jjtn001);
+                   }
+                   try {
+/*@egen*/ <SINGLELASH>/*@bgen(jjtree)*/
+                   } finally {
+                     if (jjtc001) {
+                       jjtree.closeNodeScope(jjtn001, true);
+                     }
+                   }
+/*@egen*/             relativePath() 
+        |/*@bgen(jjtree) DoubleSlash */
+          {
+            AST_DoubleSlash jjtn002 = new AST_DoubleSlash(this, JJTDOUBLESLASH);
+            boolean jjtc002 = true;
+            jjtree.openNodeScope(jjtn002);
+          }
+          try {
+/*@egen*/ <DOUBLESLASH>/*@bgen(jjtree)*/
+          } finally {
+            if (jjtc002) {
+              jjtree.closeNodeScope(jjtn002, true);
+            }
+          }
+/*@egen*/             relativePath() ) xQuery2()
     | LOOKAHEAD((","<VAR><ASSIGN>) | (","<VAR><IN>)) {}
-    | "," xQuery() xQuery2()
-        | {}
+    |/*@bgen(jjtree) Comma */
+      {
+        AST_Comma jjtn003 = new AST_Comma(this, JJTCOMMA);
+        boolean jjtc003 = true;
+        jjtree.openNodeScope(jjtn003);
+      }
+      try {
+/*@egen*/ ","/*@bgen(jjtree)*/
+      } finally {
+        if (jjtc003) {
+          jjtree.closeNodeScope(jjtn003, true);
+        }
+      }
+/*@egen*/       xQuery() xQuery2()
+    | {}
 }
 
 void forClause()                :   {/*@bgen(jjtree) FORCLAUSE */
@@ -419,7 +458,20 @@ void forClause()                :   {/*@bgen(jjtree) FORCLAUSE */
 /*@egen*/}
 {/*@bgen(jjtree) FORCLAUSE */
     try {
-/*@egen*/   <FOR> var() <IN> xQuery() ( "," var() <IN> xQuery() )*/*@bgen(jjtree)*/
+/*@egen*/   <FOR> var() <IN> xQuery() (/*@bgen(jjtree) Comma */
+                                {
+                                  AST_Comma jjtn001 = new AST_Comma(this, JJTCOMMA);
+                                  boolean jjtc001 = true;
+                                  jjtree.openNodeScope(jjtn001);
+                                }
+                                try {
+/*@egen*/ ","/*@bgen(jjtree)*/
+                                } finally {
+                                  if (jjtc001) {
+                                    jjtree.closeNodeScope(jjtn001, true);
+                                  }
+                                }
+/*@egen*/       var() <IN> xQuery() )*/*@bgen(jjtree)*/
     } catch (Throwable jjte000) {
       if (jjtc000) {
         jjtree.clearNodeScope(jjtn000);
@@ -449,7 +501,20 @@ void letClause()                    :   {/*@bgen(jjtree) #LETCLAUSE(> 1) */
 /*@egen*/}
 {/*@bgen(jjtree) #LETCLAUSE(> 1) */
     try {
-/*@egen*/   <LET>  var() <ASSIGN> xQuery() ( "," var() <ASSIGN> xQuery() )*/*@bgen(jjtree)*/
+/*@egen*/   <LET>  var() <ASSIGN> xQuery() (/*@bgen(jjtree) Comma */
+                                     {
+                                       AST_Comma jjtn001 = new AST_Comma(this, JJTCOMMA);
+                                       boolean jjtc001 = true;
+                                       jjtree.openNodeScope(jjtn001);
+                                     }
+                                     try {
+/*@egen*/ ","/*@bgen(jjtree)*/
+                                     } finally {
+                                       if (jjtc001) {
+                                         jjtree.closeNodeScope(jjtn001, true);
+                                       }
+                                     }
+/*@egen*/       var() <ASSIGN> xQuery() )*/*@bgen(jjtree)*/
     } catch (Throwable jjte000) {
       if (jjtc000) {
         jjtree.clearNodeScope(jjtn000);
@@ -551,35 +616,48 @@ void cond()                     :   {/*@bgen(jjtree) COND */
   try {
 /*@egen*/ <EMPTY>"(" xQuery() ")" cond2()
     | ( <SOME> var() <IN> xQuery() 
-            ( "," var() <IN> xQuery() )* <SATISFIES> cond() cond2()
+            (/*@bgen(jjtree) Comma */
+              {
+                AST_Comma jjtn001 = new AST_Comma(this, JJTCOMMA);
+                boolean jjtc001 = true;
+                jjtree.openNodeScope(jjtn001);
+              }
+              try {
+/*@egen*/ ","/*@bgen(jjtree)*/
+              } finally {
+                if (jjtc001) {
+                  jjtree.closeNodeScope(jjtn001, true);
+                }
+              }
+/*@egen*/       var() <IN> xQuery() )* <SATISFIES> cond() cond2()
       )
         |
         ( xQuery() 
           ( LOOKAHEAD(2)/*@bgen(jjtree) Is */
                          {
-                           AST_Is jjtn001 = new AST_Is(this, JJTIS);
-                           boolean jjtc001 = true;
-                           jjtree.openNodeScope(jjtn001);
+                           AST_Is jjtn002 = new AST_Is(this, JJTIS);
+                           boolean jjtc002 = true;
+                           jjtree.openNodeScope(jjtn002);
                          }
                          try {
 /*@egen*/ <IS>/*@bgen(jjtree)*/
                          } finally {
-                           if (jjtc001) {
-                             jjtree.closeNodeScope(jjtn001, true);
+                           if (jjtc002) {
+                             jjtree.closeNodeScope(jjtn002, true);
                            }
                          }
 /*@egen*/    xQuery() cond2() 
             |/*@bgen(jjtree) Eq */
               {
-                AST_Eq jjtn002 = new AST_Eq(this, JJTEQ);
-                boolean jjtc002 = true;
-                jjtree.openNodeScope(jjtn002);
+                AST_Eq jjtn003 = new AST_Eq(this, JJTEQ);
+                boolean jjtc003 = true;
+                jjtree.openNodeScope(jjtn003);
               }
               try {
 /*@egen*/ <EQ>/*@bgen(jjtree)*/
               } finally {
-                if (jjtc002) {
-                  jjtree.closeNodeScope(jjtn002, true);
+                if (jjtc003) {
+                  jjtree.closeNodeScope(jjtn003, true);
                 }
               }
 /*@egen*/    xQuery() cond2() 

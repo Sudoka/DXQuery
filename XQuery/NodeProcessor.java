@@ -11,7 +11,7 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 	public DebugLogger log = new DebugLogger("NodeProcessor");
 
 	public NodeProcessor() {
-
+		log.SetObjectControl(false, false, true);
 	}
 
 	/*

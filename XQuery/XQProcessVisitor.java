@@ -117,8 +117,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public Object visit(AST_RP node, Object data) {
 		log.RegularLog("Visit: AST_RP" + " <" + node.jjtGetNumChildren() + ">");
 
-		
-		data = node.childrenAccept(this, data);
+		// data = node.childrenAccept(this, data);
 		// TODO Auto-generated method stub
 		return data;
 	}
