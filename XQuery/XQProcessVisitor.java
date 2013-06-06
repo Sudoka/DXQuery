@@ -31,7 +31,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public org.w3c.dom.Node root;
 	public Document doc;
 
-	public final int REMOVE_LIST = 1;
+	public final int REMOVE_VARKEEPER = 1;
 	public final int REMOVE_CONTEXT = 2;
 
 	public XQProcessVisitor() {
@@ -65,11 +65,25 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		assert (node.jjtGetNumChildren() == 1);
 		VariableKeeper result = (VariableKeeper) node.children[0].jjtAccept(
 				this, new XContext());
+
 		log.DebugLog("Got result size:" + result.size());
+		// try {
+		// DOMPrinter.printXML(result.GetVarNodeList().get(0).node);
+		// } catch (IOException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
 		for (Node n : result.GetNodes()) {
+
 			log.DebugLog("Node:" + n.getNodeName());
 			if (n.getNodeType() == Node.TEXT_NODE) {
 				log.DebugLog("text node value:" + n.getNodeValue());
+			}
+			try {
+				System.out.println(DOMPrinter.printXML(n));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 		return result;
@@ -221,6 +235,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			break;
 		case JJTSTRING:
 			String string = firstChild.getText();
+			string = new String(string.substring(1, string.length()-1));
 			Node newTextNode = doc.createTextNode(string);
 			tmpAdd = new ArrayList<Object>();
 			tmpAdd.add(newTextNode);
@@ -395,8 +410,8 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		assert ((node.jjtGetNumChildren() + 1) % 3 == 0);
 		int varNum = (node.jjtGetNumChildren() + 1) / 3;
 		for (int i = 0; i < varNum; i++) {
-			SimpleNode xqNode = (SimpleNode) node.children[i * 3 + 1];
 			SimpleNode nameNode = (SimpleNode) node.children[i * 3];
+			SimpleNode xqNode = (SimpleNode) node.children[i * 3 + 1];
 			log.DebugLog("xqNode:" + jjtNodeName[xqNode.getId()] + "; varNode:"
 					+ jjtNodeName[nameNode.getId()]);
 			assert (xqNode.getId() == JJTXQ && nameNode.getId() == JJTVAR);
@@ -453,13 +468,9 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		if (toBeRemoved instanceof XContext) {
 			return new XContext();
 		} else {
-			ArrayList<VarNode> removeList = (ArrayList<VarNode>) toBeRemoved;
-			log.DebugLog("!!!Debug point: removelist size:" + removeList.size());
-			log.DebugLog("Node info name:" + removeList.get(0).name
-					+ " nodename" + removeList.get(0).node.getNodeValue());
-			for (VarNode varNode : removeList) {
-				newContext.RemoveVarNodeAndLinkData(varNode);
-			}
+			VariableKeeper removeList = (VariableKeeper) toBeRemoved;
+			log.DebugLog("In Where, to be removed:" + removeList.size());
+			newContext.RecursiveRemoveVariableKeeper(removeList);
 			return newContext;
 		}
 	}
@@ -483,21 +494,20 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		SimpleNode firstChild = (SimpleNode) node.children[0];
 		int firstChildId = firstChild.getId();
 
-		ArrayList<VarNode> removeList = new ArrayList<VarNode>();
+		VariableKeeper removeList = new VariableKeeper();
 		XContext removeContext = new XContext();
 		int removeFlag = 0;
 		switch (firstChildId) {
 		case JJTCOND:
-			Object removeOb = (ArrayList<VarNode>) firstChild.jjtAccept(this,
-					newContext);
+			Object removeOb = firstChild.jjtAccept(this, newContext);
 			if (removeOb instanceof XContext) {
 				removeFlag = REMOVE_CONTEXT;
 				removeContext = (XContext) removeOb;
 				if (childrenNum == 1)
 					return removeContext;
 			} else {
-				removeFlag = REMOVE_LIST;
-				removeList = (ArrayList<VarNode>) removeOb;
+				removeFlag = REMOVE_VARKEEPER;
+				removeList = (VariableKeeper) removeOb;
 				if (childrenNum == 1)
 					return removeList;
 			}
@@ -505,6 +515,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 
 		case JJTXQ:
 			assert (childrenNum >= 3);
+			((XContext) data).DebugPrintAllBingdings();
 			VariableKeeper xqResult1 = (VariableKeeper) firstChild.jjtAccept(
 					this, data);
 			SimpleNode secondChild = (SimpleNode) node.children[1];
@@ -517,10 +528,13 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			case JJTIS:
 				VariableKeeper xqResult2 = (VariableKeeper) thirdChild
 						.jjtAccept(this, data);
+				xqResult1.PrintAllVars();
+				System.out.println("-------------------------");
+				xqResult2.PrintAllVars();
 				int operation = (secondChildId == JJTEQ ? VariableKeeper.EQ_DISJOINT
 						: VariableKeeper.IS_DISJOINT);
-				removeList.addAll(xqResult1.DisJoint(xqResult2, operation));
-				removeFlag = REMOVE_LIST;
+				removeList = xqResult1.DisJoint(xqResult2, operation);
+				removeFlag = REMOVE_VARKEEPER;
 				break;
 			default:
 				log.ErrorLog("Evaluating Cond, encountered unexpected second child:"
@@ -529,10 +543,6 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				break;
 			}
 			if (childrenNum == 3) {
-				log.DebugLog("!!!Debug point: removelist size:"
-						+ removeList.size());
-				log.DebugLog("Node info name:" + removeList.get(0).name
-						+ " nodename" + removeList.get(0).node.getNodeValue());
 				return removeList;
 			}
 			break;
@@ -544,8 +554,8 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 					this, data);
 
 			if (xqResult == null || xqResult.size() == 0) {
-				removeList = new ArrayList<VarNode>();
-				removeFlag = REMOVE_LIST;
+				removeList = new VariableKeeper();
+				removeFlag = REMOVE_VARKEEPER;
 				if (childrenNum == 2) {
 					return removeList;
 				}
@@ -560,7 +570,8 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			XContext someResult = null;
 			XContext tmpContext = ((XContext) data).clone();
 			boolean canReturn = false;
-			removeFlag = REMOVE_LIST;
+			removeFlag = REMOVE_VARKEEPER;
+			// evaluate some with correct number of children
 			if (((SimpleNode) node.children[childrenNum - 2]).getId() == JJTAND
 					|| ((SimpleNode) node.children[childrenNum - 2]).getId() == JJTOR) {
 				AST_COND tmp = new AST_COND(JJTCOND);
@@ -575,8 +586,8 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			for (String varName : tmpContext.GetVarNames()) {
 				if (someResult.Lookup(varName) == null
 						|| someResult.Lookup(varName).size() == 0) {
-					removeList.addAll(tmpContext.Lookup(varName)
-							.GetVarNodeList());
+					removeList = removeList.CreateByMerge(tmpContext
+							.Lookup(varName));
 				}
 			}
 			if (canReturn)
@@ -586,22 +597,20 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			secondChild = (SimpleNode) node.children[1];
 			secondChildId = secondChild.getId();
 			assert (secondChildId == JJTCOND);
-			removeOb = (ArrayList<VarNode>) secondChild.jjtAccept(this,
-					newContext);
-			removeFlag = REMOVE_LIST;
+			removeOb = secondChild.jjtAccept(this, newContext);
+			removeFlag = REMOVE_VARKEEPER;
 			if (removeOb instanceof XContext) {
-				removeList = new ArrayList<VarNode>();
+				removeList = new VariableKeeper();
 			} else {
-				ArrayList<VarNode> wholeList = new ArrayList<VarNode>();
-				for (String varName : newContext.GetVarNames()) {
-					wholeList.addAll(newContext.Lookup(varName)
-							.GetVarNodeList());
-				}
-				ArrayList<VarNode> tmpRemoveList = (ArrayList<VarNode>) removeOb;
-				for (VarNode varNode : tmpRemoveList) {
-					wholeList.remove(varNode);
-				}
-				removeList = wholeList;
+				VariableKeeper wholeVarKeeper = new VariableKeeper();
+				// for (String varName : newContext.GetVarNames()) {
+				// wholeVarKeeper = wholeVarKeeper.CreateByMerge(newContext
+				// .Lookup(varName));
+				// }
+				wholeVarKeeper = newContext.Zip();
+				VariableKeeper tmpRemove = (VariableKeeper) removeOb;
+				wholeVarKeeper.Subtract(tmpRemove);
+				removeList = wholeVarKeeper;
 				if (childrenNum == 2) {
 					return removeList;
 				}
@@ -622,11 +631,11 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			// make union and return
 			if (removeFlag == REMOVE_CONTEXT) {
 				return removeContext;
-			} else if (removeFlag == REMOVE_LIST) {
+			} else if (removeFlag == REMOVE_VARKEEPER) {
 				if (removeOb instanceof XContext) {
 					return (XContext) removeOb;
 				} else {
-					return Union(removeList, (ArrayList<VarNode>) removeOb);
+					return removeList.CreateByMerge((VariableKeeper) removeOb);
 				}
 			} else {
 				log.ErrorLog("Remove Flag has unexpected value!!!");
@@ -639,7 +648,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				if (removeOb instanceof XContext) {
 					return removeList;
 				} else {
-					return Intersect(removeList, (ArrayList<VarNode>) removeOb);
+					return removeList.Intersect((VariableKeeper) removeOb);
 				}
 			}
 		}
@@ -671,14 +680,16 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		if (condResult instanceof XContext) {
 			return context;
 		} else {
-			ArrayList<VarNode> removeList = (ArrayList<VarNode>) condResult;
-			for (VarNode varNode : removeList) {
-				try {
-					result.Lookup(varNode.name).RemoveNode(varNode.node);
-				} catch (NullPointerException e) {
+			VariableKeeper removeList = (VariableKeeper) condResult;
+			if (removeList != null && removeList.size() > 0
+					&& removeList.GetVarNodeList() != null)
+				for (VarNode varNode : removeList.GetVarNodeList()) {
+					try {
+						result.Lookup(varNode.name).RemoveNode(varNode.node);
+					} catch (NullPointerException e) {
 
+					}
 				}
-			}
 			XContext finalResult = context.clone();
 			for (String varName : result.GetVarNames()) {
 				if (result.Lookup(varName) == null

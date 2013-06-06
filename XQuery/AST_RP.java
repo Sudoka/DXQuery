@@ -58,6 +58,14 @@ public class AST_RP extends SimpleNode {
 				// for each parent node, evaluate RP under it and get the result
 				ArrayList<Object> tmpRPresult = np.ProcessRP(node, o,
 						domOperation);
+//				log.DebugLog("In evaluateRPunderVariable, got RP result:");
+//				for (Object object : tmpRPresult) {
+//					if(object instanceof Node){
+//						System.out.println("Node name:"+((Node)object).getNodeName());
+//					}else if (object instanceof String){
+//						System.out.println("Got String!:"+((String)object));
+//					}
+//				}
 				// get the linked data of node o
 				ArrayList<VarNode> linkData = new ArrayList<VarNode>();
 				if (var.GetLinkData(o) != null) {

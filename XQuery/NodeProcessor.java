@@ -76,7 +76,7 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 				// check if the node is a text node, if it is,
 				// get the text inside and collect them
 				result = new ArrayList<Object>();
-				result.add(domParent.getTextContent());
+				result.add(domParent.getFirstChild());
 			} else {
 				// if the node is not a text, node, the result
 				// will be null, so do nothing and return it

@@ -28,22 +28,19 @@ public class VariableKeeper {
 
 	public VariableKeeper CreateByMerge(VariableKeeper var) {
 		VariableKeeper result = new VariableKeeper();
-		result.hashIndex.putAll(this.hashIndex);
-		result.hashIndex.putAll(var.hashIndex);
-		result.linkedData.addAll(this.linkedData);
-		result.linkedData.addAll(var.linkedData);
-		/*
-		 * since this is a new variable that has not binded yet, we should set
-		 * the names to null
-		 */
-		result.SetName(null);
+		VariableKeeper thisDummy = this.clone();
+		VariableKeeper varDummy = var.clone();
+		result.hashIndex.putAll(thisDummy.hashIndex);
+		result.hashIndex.putAll(varDummy.hashIndex);
+		result.linkedData.addAll(thisDummy.linkedData);
+		result.linkedData.addAll(varDummy.linkedData);
 		return result;
 	}
 
 	public void PrintAllVars() {
 		for (Node node : hashIndex.keySet()) {
 			try {
-				DOMPrinter.printXML(node);
+				System.out.println(DOMPrinter.printXML(node));
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -54,7 +51,10 @@ public class VariableKeeper {
 	public VariableKeeper clone() {
 		VariableKeeper newVar = new VariableKeeper();
 		// clone name
-		newVar.Name = new String(this.Name);
+		if (this.Name == null)
+			newVar.Name = null;
+		else
+			newVar.Name = new String(this.Name);
 		// clone linked data
 		newVar.linkedData = new ArrayList<ArrayList<VarNode>>();
 		for (ArrayList<VarNode> varlist : this.linkedData) {
@@ -81,8 +81,8 @@ public class VariableKeeper {
 	}
 
 	public void AddNodeWithLink(Node n, ArrayList<VarNode> linkData) {
-		hashIndex.put(n, linkData);
 		linkedData.add(linkData);
+		hashIndex.put(n, linkData);
 	}
 
 	public Set<Node> GetNodes() {
@@ -98,17 +98,33 @@ public class VariableKeeper {
 		hashIndex.remove(node);
 	}
 
-	// this method may need to optimize for performance
-	public ArrayList<VarNode> DisJoint(VariableKeeper var, int operation) {
-		ArrayList<VarNode> result = new ArrayList<VarNode>();
-		result.addAll(FindDifferent(this, var, operation));
-		result.addAll(FindDifferent(var, this, operation));
-		return result;
+	public void Subtract(VariableKeeper sub) {
+		for (Node node : sub.GetNodes()) {
+			RemoveNode(node);
+		}
 	}
 
-	private ArrayList<VarNode> FindDifferent(VariableKeeper main,
+	public VariableKeeper Intersect(VariableKeeper var) {
+		VariableKeeper clone1 = clone();
+		VariableKeeper clone2 = clone();
+		clone1.Subtract(var);
+		clone2.Subtract(clone1);
+		return clone2;
+	}
+
+	// this method may need to optimize for performance
+	public VariableKeeper DisJoint(VariableKeeper var, int operation) {
+		VariableKeeper result = new VariableKeeper();
+		VariableKeeper result2 = result.CreateByMerge(FindDifferent(this, var,
+				operation));
+		VariableKeeper finalResult = result2.CreateByMerge(FindDifferent(var,
+				this, operation));
+		return finalResult;
+	}
+
+	private VariableKeeper FindDifferent(VariableKeeper main,
 			VariableKeeper compare, int operation) {
-		ArrayList<VarNode> result = new ArrayList<VarNode>();
+		VariableKeeper result = new VariableKeeper();
 
 		for (Node mainNode : main.hashIndex.keySet()) {
 			boolean uniqueFlag = true;
@@ -129,11 +145,14 @@ public class VariableKeeper {
 				}
 			}
 			if (uniqueFlag) {
-				VarNode addNode = new VarNode(main.Name, mainNode);
-				result.add(addNode);
+				result.AddNodeWithLink(mainNode, main.GetLinkData(mainNode));
 			}
 		}
 		return result;
+	}
+
+	public ArrayList<ArrayList<VarNode>> GetWholeLinkData() {
+		return linkedData;
 	}
 
 	public ArrayList<VarNode> GetVarNodeList() {
@@ -146,6 +165,11 @@ public class VariableKeeper {
 			result.add(varList.get(varList.size() - 1));
 		}
 		return result;
+	}
+
+	public void DebugPrintInfo() {
+		log.DebugLog("Printing VariableKeeper information:");
+
 	}
 
 	/**
@@ -287,7 +311,10 @@ class VarNode {
 	}
 
 	public VarNode clone() {
-		return new VarNode(new String(this.name), this.node);
+		String nameClone = null;
+		if (this.name != null)
+			nameClone = new String(this.name);
+		return new VarNode(nameClone, this.node);
 	}
 
 	public boolean equals(VarNode v) {

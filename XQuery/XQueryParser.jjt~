@@ -24,7 +24,7 @@ void absolutePath() #AP         :
 {
     Token t;
 }
-{  LOOKAHEAD(3) <DOC>"(\"" filename() "\")" 
+{  <DOC>"(\"" filename() "\")" 
     (LOOKAHEAD(2)<DOUBLESLASH>#DoubleSlash relativePath() 
      | <SINGLELASH>#SingleSlash relativePath()
     )

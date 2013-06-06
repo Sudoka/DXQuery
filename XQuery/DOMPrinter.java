@@ -65,7 +65,7 @@ public class DOMPrinter {
 			boolean flush) throws IOException {
 		switch (node.getNodeType()) {
 		case Node.ELEMENT_NODE: {
-			System.out.println("ELEMENT NODE");
+			//System.out.println("ELEMENT NODE");
 			// Print opening tag
 			wr.write(makeTabs(n) + "<" + node.getNodeName() + " ");
 			if (flush)
@@ -103,7 +103,7 @@ public class DOMPrinter {
 			break;
 
 		case Node.TEXT_NODE: {
-			System.out.println("TEXT NODE");
+			//System.out.println("TEXT NODE");
 			String text = node.getNodeValue().trim();
 			// Make sure we don't print whitespace
 			if (text.length() > 0)
