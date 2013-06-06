@@ -23,6 +23,20 @@ public class VariableKeeper {
 		linkedData = new ArrayList<ArrayList<VarNode>>();
 	}
 
+	public VariableKeeper CreateByMerge(VariableKeeper var) {
+		VariableKeeper result = new VariableKeeper();
+		result.hashIndex.putAll(this.hashIndex);
+		result.hashIndex.putAll(var.hashIndex);
+		result.linkedData.addAll(this.linkedData);
+		result.linkedData.addAll(var.linkedData);
+		/*
+		 * since this is a new variable that has not binded yet, we should set
+		 * the names to null
+		 */
+		result.SetName(null);
+		return result;
+	}
+
 	public ArrayList<VarNode> GetLinkData(Node n) {
 		return hashIndex.get(n);
 	}
@@ -76,9 +90,16 @@ public class VariableKeeper {
 	public void SetName(String name) {
 		log.RegularLog("in SetName, old name is:" + this.Name
 				+ "; new name will be" + name);
-		this.Name = new String(name);
+		if(name != null)
+			this.Name = new String(name);
+		else 
+			this.Name = null;
 		for (ArrayList<VarNode> vn : linkedData) {
-			vn.get(vn.size() - 1).name = new String(name);
+			if(name != null)
+				vn.get(vn.size() - 1).name = new String(name);
+			else {
+				vn.get(vn.size() - 1).name = null;
+			}
 		}
 	}
 

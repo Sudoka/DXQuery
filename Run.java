@@ -12,9 +12,9 @@ public class Run implements XQueryParserTreeConstants {
 				+ "		$sc in $a//SCENE, \n"
 				+ "		$sp in $sc/SPEECH \n"
 				+ "		where $sp/LINE/text() = \"Et tu, Brute! Then fall, Caesar.\" \n"
-				+ "return <who>{$sp/SPEAKER/text()}</who> \n"
-				+ "  <when>{<act>{$a/title/text()}</act> \n"
-				+ "<scene>{$sc/title/text()}</scene>} \n" + "       <when> \n";
+				+ "return <who>{$sp/SPEAKER/text()}</who> \n" + "  <when>{\n"
+				+ "<act>{$a/title/text()}</act> \n"
+				+ "<scene>{$sc/title/text()}</scene>\n" + "} </when> \n";
 		String test2 = "for $s in document(\"j_caesar.xml\")//SPEAKER \n"
 				+ "return <speaks>{<who>{$s/text()}</who>, \n"
 				+ "                for $a in document(\"j_caesar.xml\")//ACT\n"
@@ -22,7 +22,7 @@ public class Run implements XQueryParserTreeConstants {
 				+ "                return <when>{$a/title/text()}</when>}\n"
 				+ "</speaks>\n";
 
-		String test3 = "for $A in document(\"test.xml\")/AS\n"
+		String test3 = "for $A in document(\"bib.xml\")/AS\n"
 				+ "where $A = \"test\"\n" + "return <a>{$A}</a>\n";
 
 		String test4 = "<result>\n"
@@ -45,8 +45,8 @@ public class Run implements XQueryParserTreeConstants {
 		String teststr = "\t\n";
 		System.out.println(teststr.trim().length());
 
-		String testAP = "($var) / sadf";
-		new Run().runQuery(testAP);
+		String testAP = "for $s in $b/rs return $s , for $s in $b return $s";
+		new Run().runQuery(test5);
 	}
 
 	void runQuery(String queryStr)

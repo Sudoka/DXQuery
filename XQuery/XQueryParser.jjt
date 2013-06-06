@@ -179,23 +179,10 @@ TOKEN [IGNORE_CASE]: {
 
 /* symbols */
 TOKEN: {
-           //< SINGLEEQ: "=" >
-           //| < DOUBLEEQ: "==" >
            < ASSIGN: ":=" >
                |< STAR: "*" >
-               //| < COMMA:"," >
                | < DOT: "." >
                | < DOUBLEDOT: ".." >
-               //| < SEMI:";" >
-               //| < AT: "@" >
-               //| < LPAREN: "(" >
-               //| < RPAREN: ")" >
-               //| < LAB: "<" >
-               //| < RAB: ">" >
-               //| < LCB: "{" >
-               //| < RCB: "}" >
-               //| < LBRACE: "[" >
-               //| < RBRACE: "]" >
                | < SINGLELASH:"/" >
                | < DOUBLESLASH:"//" >
        }

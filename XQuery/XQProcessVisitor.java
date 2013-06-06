@@ -149,7 +149,9 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	@Override
 	public Object visit(AST_XQ node, Object data) {
 		log.RegularLog("Visit: AST_XQ" + " <" + node.jjtGetNumChildren() + ">");
-
+		if (!(data instanceof XContext)) {
+			log.ErrorLog("data not instanceof Context!");
+		}
 		VariableKeeper result = new VariableKeeper();
 		XContext firstContext = null;
 
@@ -173,7 +175,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			result.SimpleAddNodeList(apResult);
 			return result;
 		case JJTTAGNAME:
-			assert (childrenNum == 3);
+
 			String tag1 = firstChild.getText();
 			String tag2 = node.children[2].getText();
 			assert (tag1.equals(tag2));
@@ -185,16 +187,20 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				newRoot.appendChild(n);
 			}
 			ArrayList<Object> tmpAdd = new ArrayList<Object>();
-			log.DebugLog("Warning: Visiting XQ encountered Tagname, the next "
-					+ "operation make failed to case from Element to Node!");
 			tmpAdd.add(newRoot);
 			result.SimpleAddNodeList(tmpAdd);
-			return result;
-			// appearance of Var in the first child does not imply much on the
-			// production rule
+			if (childrenNum == 3) {
+				return result;
+			}
+			break;
+		// appearance of Var in the first child does not imply much on the
+		// production rule
 		case JJTVAR:
 			String name = ((AST_VAR) firstChild).getText();
-			result = ((XContext) data).Lookup(name);
+			VariableKeeper tmpResult = ((XContext) data).Lookup(name);
+			if (!(tmpResult == null)) {
+				result = tmpResult;
+			}
 			log.RegularLog("case JJTVAR and binds to "
 					+ (result == null ? null : result.size()) + " nodes");
 			break;
@@ -232,12 +238,21 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		switch (childrenNum) {
 		case 2:
 			SimpleNode secondChild = (SimpleNode) node.children[1];
-			assert (firstChildId == JJTLETCLAUSE && secondChild.id == JJTXQ);
-			result = (VariableKeeper) secondChild.jjtAccept(this, firstContext);
-			return result;
+			int secondChildId = secondChild.getId();
+			switch (secondChildId) {
+			case JJTRETURNCLAUSE:
+				return secondChild.jjtAccept(this, firstContext);
+			case JJTXQ:
+				return secondChild.jjtAccept(this, firstContext);
+			default:
+				log.ErrorLog("Encountered unexpected second child:["
+						+ jjtNodeName[secondChildId] + "] \nwith first child:["
+						+ jjtNodeName[firstChildId] + "] !");
+				break;
+			}
 		case 3:
 			secondChild = (SimpleNode) node.children[1];
-			int secondChildId = secondChild.getId();
+			secondChildId = secondChild.getId();
 			SimpleNode thirdChild = (SimpleNode) node.children[2];
 			int thirdChildId = thirdChild.getId();
 			switch (secondChildId) {
@@ -252,27 +267,71 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				return tmpResult;
 			case JJTCOMMA:
 				assert (thirdChildId == JJTXQ);
-				// with comma, the xq on the left of comma and right of comma
-				// should be evaluated under the same context, thus pass data as
-				// parameter
+				/**
+				 * with comma, the xq on the left of comma and right of comma
+				 * should be evaluated under the same context, thus pass data as
+				 * parameter. Also,
+				 */
 				VariableKeeper result2 = (VariableKeeper) thirdChild.jjtAccept(
 						this, data);
-				// TODO: do unique here
-				break;
+				VariableKeeper finalResult = result.CreateByMerge(result2);
+				return finalResult;
+			case JJTLETCLAUSE:
+				assert (firstChildId == JJTFORCLAUSE && thirdChildId == JJTRETURNCLAUSE);
+				XContext secondContext = (XContext) secondChild.jjtAccept(this,
+						firstContext);
+				return thirdChild.jjtAccept(this, secondContext);
+			case JJTWHERECLAUSE:
+				assert (firstChildId == JJTFORCLAUSE && thirdChildId == JJTRETURNCLAUSE);
+				secondContext = (XContext) secondChild.jjtAccept(this,
+						firstContext);
+				return thirdChild.jjtAccept(this, secondContext);
 			default:
+				log.ErrorLog("Encountered unexpected third child:["
+						+ jjtNodeName[thirdChildId] + "] \nwith first child:["
+						+ jjtNodeName[firstChildId] + "] \nwith second child:["
+						+ jjtNodeName[secondChildId] + "] !");
 				break;
 			}
-
 			break;
 		case 4:
 			secondChild = (SimpleNode) node.children[1];
+			secondChildId = secondChild.getId();
 			thirdChild = (SimpleNode) node.children[2];
+			thirdChildId = thirdChild.getId();
 			SimpleNode fourthChild = (SimpleNode) node.children[3];
-			break;
+			int fourthChildId = fourthChild.getId();
+			assert (firstChildId == JJTFORCLAUSE
+					&& secondChildId == JJTLETCLAUSE
+					&& thirdChildId == JJTWHERECLAUSE && fourthChildId == JJTRETURNCLAUSE);
+			XContext secondContext = (XContext) secondChild.jjtAccept(this,
+					firstContext);
+			XContext thirdContext = (XContext) thirdChild.jjtAccept(this,
+					secondContext);
+			return fourthChild.jjtAccept(this, thirdContext);
+		case 5:
+			SimpleNode fifthChild = (SimpleNode) node.children[4];
+			int fifthChildId = fifthChild.getId();
+			assert (fifthChildId == JJTXQ);
+			VariableKeeper result2 = (VariableKeeper) fifthChild.jjtAccept(
+					this, data);
+			VariableKeeper finalResult = result.CreateByMerge(result2);
+			return finalResult;
 		default:
+			secondChild = (SimpleNode) node.children[1];
+			secondChildId = secondChild.getId();
+			thirdChild = (SimpleNode) node.children[2];
+			thirdChildId = thirdChild.getId();
+			fourthChild = (SimpleNode) node.children[3];
+			fourthChildId = fourthChild.getId();
+			log.ErrorLog("Encountered unexpected third child:["
+					+ jjtNodeName[thirdChildId] + "] \nwith first child:["
+					+ jjtNodeName[firstChildId] + "] \nwith second child:["
+					+ jjtNodeName[secondChildId] + "] \nwith fourth child:["
+					+ jjtNodeName[fourthChildId] + "] !");
 			break;
 		}
-
+		log.ErrorLog("Returned result at the very end of XQ!");
 		return result;
 	}
 

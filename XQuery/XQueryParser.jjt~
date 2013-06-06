@@ -108,7 +108,7 @@ void whereClause()  #WHERECLAUSE(>0)    :   {}
     | {}
 }
 
-void returnClause() #RETURNCLAUSE(>1)   :   {}
+void returnClause() #RETURNCLAUSE(>0)   :   {}
 {   <RETURN> xQuery()
 }
 

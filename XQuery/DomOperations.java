@@ -86,5 +86,4 @@ public class DomOperations {
 		}
 		return resultList;
 	}
-
 }

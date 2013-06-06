@@ -19,6 +19,17 @@ public class AST_RP extends SimpleNode {
 		return visitor.visit(this, data);
 	}
 
+	/**
+	 * Since we have already executed unique operation on the results from
+	 * NodeProcessor ProcessRP, we do not do unique here. Also, since we
+	 * evaluate each RP under different node, it's fair that we assume we don't
+	 * need to do unique on the combined results
+	 * 
+	 * @param var
+	 * @param node
+	 * @param domOperation
+	 * @return
+	 */
 	public VariableKeeper EvaluateRPUnderVariable(VariableKeeper var,
 			AST_RP node, int domOperation) {
 		NodeProcessor np = new NodeProcessor();
