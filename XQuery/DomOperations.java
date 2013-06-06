@@ -86,4 +86,12 @@ public class DomOperations {
 		}
 		return resultList;
 	}
+
+	public static ArrayList<VarNode> cloneVarNodeList(ArrayList<VarNode> list) {
+		ArrayList<VarNode> newList = new ArrayList<VarNode>();
+		for (VarNode varNode : list) {
+			newList.add(varNode.clone());
+		}
+		return newList;
+	}
 }

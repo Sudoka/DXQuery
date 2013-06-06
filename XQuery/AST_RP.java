@@ -33,6 +33,9 @@ public class AST_RP extends SimpleNode {
 	public VariableKeeper EvaluateRPUnderVariable(VariableKeeper var,
 			AST_RP node, int domOperation) {
 		NodeProcessor np = new NodeProcessor();
+		if (var == null) {
+			return new VariableKeeper();
+		}
 		ArrayList<Object> allNodes = new ArrayList<Object>();
 		if (var.GetName() == null || var.GetName() == "") {
 			if (var.GetName() == "") {
@@ -47,6 +50,7 @@ public class AST_RP extends SimpleNode {
 			return result;
 		} else {
 			VariableKeeper result = new VariableKeeper();
+			log.DebugLog("size of parent nodes:" + var.GetNodes().size());
 			// iterate over all the parent nodes
 			for (Node o : var.GetNodes()) {
 				// for each parent node, evaluate RP under it and get the result
@@ -54,16 +58,33 @@ public class AST_RP extends SimpleNode {
 						domOperation);
 				// get the linked data of node o
 				ArrayList<VarNode> linkData = new ArrayList<VarNode>();
-				linkData.addAll(var.GetLinkData(o));
-
+				if (var.GetLinkData(o) != null) {
+					linkData.addAll(DomOperations.cloneVarNodeList(var
+							.GetLinkData(o)));
+				}
 				// iterate over the result got from RP
 				for (Object ob : tmpRPresult) {
+					// build a new varnode for this node ob
 					Node n = (Node) ob;
 					VarNode vn = new VarNode("", n);
-					linkData.add(vn);
-					result.AddNodeWithLink(n, linkData);
-					assert (result.GetLinkData(n).size()
-							- var.GetLinkData(o).size() == 1);
+
+					// get the clone of the link data
+					ArrayList<VarNode> tmpLinkData = DomOperations
+							.cloneVarNodeList(linkData);
+
+					// add a new link to the link data
+					tmpLinkData.add(vn);
+
+					// add node n into the final result with its link data
+					result.AddNodeWithLink(n, tmpLinkData);
+
+					// check if the link data size is exactly one greater
+					// after linking one more varnode data
+					int oldSize = var.GetLinkData(o) == null ? 0 : var
+							.GetLinkData(o).size();
+					// log.DebugLog("new size:" + result.GetLinkData(n).size()
+					//		+ "; old size:" + oldSize);
+					assert ((result.GetLinkData(n).size() - oldSize) == 1);
 				}
 			}
 			return result;

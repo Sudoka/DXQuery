@@ -1,5 +1,6 @@
 package XQuery;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +38,42 @@ public class VariableKeeper {
 		return result;
 	}
 
+	public void PrintAllVars() {
+		for (Node node : hashIndex.keySet()) {
+			try {
+				DOMPrinter.printXML(node);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public VariableKeeper clone() {
+		VariableKeeper newVar = new VariableKeeper();
+		// clone name
+		newVar.Name = new String(this.Name);
+		// clone linked data
+		newVar.linkedData = new ArrayList<ArrayList<VarNode>>();
+		for (ArrayList<VarNode> varlist : this.linkedData) {
+			ArrayList<VarNode> tmpList = new ArrayList<VarNode>();
+			for (VarNode varNode : varlist) {
+				tmpList.add(varNode.clone());
+			}
+			newVar.linkedData.add(tmpList);
+		}
+		// clone hashIndex
+		newVar.hashIndex = new HashMap<Node, ArrayList<VarNode>>();
+		for (Node node : hashIndex.keySet()) {
+			ArrayList<VarNode> tmpList = new ArrayList<VarNode>();
+			for (VarNode varNode : hashIndex.get(node)) {
+				tmpList.add(varNode.clone());
+			}
+			newVar.hashIndex.put(node, tmpList);
+		}
+		return newVar;
+	}
+
 	public ArrayList<VarNode> GetLinkData(Node n) {
 		return hashIndex.get(n);
 	}
@@ -63,11 +100,17 @@ public class VariableKeeper {
 	public boolean SimpleAddNodeList(ArrayList<Object> list) {
 		if (linkedData != null && linkedData.size() > 0
 				&& linkedData.get(0).size() > 0) {
-			log.DebugLog("Calling SimpleAddNodeList into an none empty linkedData!");
+			log.ErrorLog("SimpleAddNodeList should only be used on empty VK! "
+					+ "This VK already has link data!");
+			return false;
 		}
 		for (Object n : list) {
 			if (n instanceof Node) {
-				hashIndex.put((Node) n, null);
+				ArrayList<VarNode> tmpList = new ArrayList<VarNode>();
+				VarNode tmpNode = new VarNode("", (Node) n);
+				tmpList.add(tmpNode);
+				linkedData.add(tmpList);
+				hashIndex.put((Node) n, tmpList);
 			} else {
 				log.ErrorLog(" in SimpleAddNodeList, encountered none node type in list! ");
 				return false;
@@ -90,12 +133,12 @@ public class VariableKeeper {
 	public void SetName(String name) {
 		log.RegularLog("in SetName, old name is:" + this.Name
 				+ "; new name will be" + name);
-		if(name != null)
+		if (name != null)
 			this.Name = new String(name);
-		else 
+		else
 			this.Name = null;
 		for (ArrayList<VarNode> vn : linkedData) {
-			if(name != null)
+			if (name != null)
 				vn.get(vn.size() - 1).name = new String(name);
 			else {
 				vn.get(vn.size() - 1).name = null;
@@ -175,7 +218,7 @@ class VarNode {
 	Node node = null;
 
 	public VarNode() {
-
+		// TODO Auto-generated constructor stub
 	}
 
 	public VarNode(String name, Node node) {
@@ -183,4 +226,7 @@ class VarNode {
 		this.node = node;
 	}
 
+	public VarNode clone() {
+		return new VarNode(new String(this.name), this.node);
+	}
 }

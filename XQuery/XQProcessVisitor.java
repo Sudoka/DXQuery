@@ -59,8 +59,13 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		XContext context = new XContext();
 		// root should only has one node, which is AST_XQ
 		assert (node.jjtGetNumChildren() == 1);
-		data = node.childrenAccept(this, context);
-		return data;
+		VariableKeeper result = (VariableKeeper) node.children[0].jjtAccept(
+				this, new XContext());
+		log.DebugLog("Got result size:" + result.size());
+		for (Node n : result.GetNodes()) {
+			log.DebugLog("Node:"+n.getNodeName());
+		}
+		return result;
 	}
 
 	/*
@@ -345,9 +350,28 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public Object visit(AST_FORCLAUSE node, Object data) {
 		log.RegularLog("Visit: AST_FORCLAUSE" + " <" + node.jjtGetNumChildren()
 				+ ">");
-		data = node.childrenAccept(this, data);
-		// TODO Auto-generated method stub
-		return data;
+		XContext result = ((XContext) data).clone();
+		XContext context = (XContext) data;
+		log.ErrorLog("If assertion failure occurs here, the children"
+				+ " number of for clause has problem!");
+		assert ((node.jjtGetNumChildren() + 1) % 3 == 0);
+		int varNum = (node.jjtGetNumChildren() + 1) / 3;
+		for (int i = 0; i < varNum; i++) {
+			SimpleNode xqNode = (SimpleNode) node.children[i * 3 + 1];
+			SimpleNode nameNode = (SimpleNode) node.children[i * 3];
+			log.DebugLog("xqNode:" + jjtNodeName[xqNode.getId()] + "; varNode:"
+					+ jjtNodeName[nameNode.getId()]);
+			assert (xqNode.getId() == JJTXQ && nameNode.getId() == JJTVAR);
+			String varName = nameNode.getText();
+			// get the value
+			VariableKeeper xqResult = (VariableKeeper) xqNode.jjtAccept(this,
+					result);
+			// set name to the value
+			xqResult.SetName(varName);
+			// bind the value to variable
+			result.Extend(varName, xqResult);
+		}
+		return result;
 	}
 
 	/*
@@ -390,9 +414,10 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public Object visit(AST_RETURNCLAUSE node, Object data) {
 		log.RegularLog("Visit: AST_RETURNCLAUSE" + " <"
 				+ node.jjtGetNumChildren() + ">");
-		data = node.childrenAccept(this, data);
-		// TODO Auto-generated method stub
-		return data;
+		assert (node.jjtGetNumChildren() == 1);
+		SimpleNode xqNode = (SimpleNode) node.children[0];
+		assert (xqNode.getId() == JJTXQ);
+		return xqNode.jjtAccept(this, data);
 	}
 
 	/*

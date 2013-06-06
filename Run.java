@@ -1,6 +1,13 @@
 import XQuery.*;
+
 import java.io.StringReader;
 import java.lang.Integer;
+import java.util.ArrayList;
+
+class test {
+	String str;
+	ArrayList<ArrayList<String>> strMatrix;
+}
 
 public class Run implements XQueryParserTreeConstants {
 	static String query = "(./ACT)";
@@ -45,8 +52,8 @@ public class Run implements XQueryParserTreeConstants {
 		String teststr = "\t\n";
 		System.out.println(teststr.trim().length());
 
-		String testAP = "for $s in $b/rs return $s , for $s in $b return $s";
-		new Run().runQuery(test5);
+		String testAP = "for $b in doc(\"bib.xml\")/bib, $c in $b/book/year return <test>{$c}</test>";
+		new Run().runQuery(testAP);
 	}
 
 	void runQuery(String queryStr)
@@ -65,7 +72,8 @@ public class Run implements XQueryParserTreeConstants {
 			System.out.println();
 
 			XQProcessVisitor visitor = new XQProcessVisitor();
-			root.jjtAccept(visitor, null);
+			VariableKeeper res = (VariableKeeper) root.jjtAccept(visitor, null);
+			res.PrintAllVars();
 
 			// here's where we actually walk the tree we've so painfully
 			// constructed and derive an answer to our query

@@ -1,3 +1,4 @@
+package XQuery;
 import org.apache.xerces.parsers.DOMParser;
 
 import org.w3c.dom.Attr;
@@ -6,7 +7,6 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import XQuery.DebugLogger;
 
 import java.util.*;
 import java.io.*;
