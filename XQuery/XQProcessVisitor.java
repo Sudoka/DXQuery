@@ -14,7 +14,9 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.io.*;
+import java.lang.invoke.MethodHandles.Lookup;
 
 /**
  * @author QDX
@@ -28,6 +30,9 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 
 	public org.w3c.dom.Node root;
 	public Document doc;
+
+	public final int REMOVE_LIST = 1;
+	public final int REMOVE_CONTEXT = 2;
 
 	public XQProcessVisitor() {
 		log = new DebugLogger("XQProcessVisitor");
@@ -63,6 +68,9 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		log.DebugLog("Got result size:" + result.size());
 		for (Node n : result.GetNodes()) {
 			log.DebugLog("Node:" + n.getNodeName());
+			if (n.getNodeType() == Node.TEXT_NODE) {
+				log.DebugLog("text node value:" + n.getNodeValue());
+			}
 		}
 		return result;
 	}
@@ -106,6 +114,10 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			for (Object o : result) {
 				if (o instanceof Node) {
 					log.DebugLog("node name:" + ((Node) o).getNodeName());
+					if (((Node) o).getNodeType() == Node.TEXT_NODE) {
+						log.DebugLog("text node value:"
+								+ ((Node) o).getNodeValue());
+					}
 				} else if (o instanceof String) {
 					log.DebugLog("get String:" + o);
 				} else {
@@ -265,8 +277,8 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				int opeartion = secondChildId == JJTSINGLESLASH ? DomOperations.RP_SIMPLE_FETCH
 						: DomOperations.RP_RECURSIVE_FETCH;
 				VariableKeeper tmpResult = ((AST_RP) thirdChild)
-						.EvaluateRPUnderVariable(result, (AST_RP) thirdChild,
-								opeartion);
+						.EvaluateRPUnderVariable(doc, result,
+								(AST_RP) thirdChild, opeartion);
 				return tmpResult;
 			case JJTCOMMA:
 				assert (thirdChildId == JJTXQ);
@@ -397,21 +409,15 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			// bind the value to variable
 			result.Extend(varName, xqResult);
 		}
-		return result;
-	}
+		log.DebugLog("=>in VisitLetOrFor, here are the variable bindings:");
+		for (String varName : result.GetVarNames()) {
+			System.out.println(varName);
+			for (Node oneNode : result.Lookup(varName).GetNodes()) {
+				System.out.println(oneNode.getNodeName());
+			}
+		}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see XQuery.XQueryParserVisitor#visit(XQuery.AST_WHERECLAUSE,
-	 * java.lang.Object)
-	 */
-	@Override
-	public Object visit(AST_WHERECLAUSE node, Object data) {
-		log.RegularLog("Visit: AST_WHERECLAUSE" + " <"
-				+ node.jjtGetNumChildren() + ">");
-		assert (node.jjtGetNumChildren() == 1);
-		return node.children[0].jjtAccept(this, data);
+		return result;
 	}
 
 	/*
@@ -433,14 +439,42 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	/*
 	 * (non-Javadoc)
 	 * 
+	 * @see XQuery.XQueryParserVisitor#visit(XQuery.AST_WHERECLAUSE,
+	 * java.lang.Object)
+	 */
+	@Override
+	public Object visit(AST_WHERECLAUSE node, Object data) {
+		log.RegularLog("Visit: AST_WHERECLAUSE" + " <"
+				+ node.jjtGetNumChildren() + ">");
+		assert (node.jjtGetNumChildren() == 1);
+		XContext newContext = ((XContext) data).clone();
+		// TODO: add more code here to remove the unsatisified nodes
+		Object toBeRemoved = node.children[0].jjtAccept(this, newContext);
+		if (toBeRemoved instanceof XContext) {
+			return new XContext();
+		} else {
+			ArrayList<VarNode> removeList = (ArrayList<VarNode>) toBeRemoved;
+			log.DebugLog("!!!Debug point: removelist size:" + removeList.size());
+			log.DebugLog("Node info name:" + removeList.get(0).name
+					+ " nodename" + removeList.get(0).node.getNodeValue());
+			for (VarNode varNode : removeList) {
+				newContext.RemoveVarNodeAndLinkData(varNode);
+			}
+			return newContext;
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see XQuery.XQueryParserVisitor#visit(XQuery.AST_COND, java.lang.Object)
 	 */
 	@Override
 	public Object visit(AST_COND node, Object data) {
 		log.RegularLog("Visit: AST_COND" + " <" + node.jjtGetNumChildren()
 				+ ">");
-		XContext result = ((XContext)data).clone();
-		
+		XContext newContext = ((XContext) data).clone();
+
 		int childrenNum = node.jjtGetNumChildren();
 		if (childrenNum == 0) {
 			log.ErrorLog("An Cond node should not have 0 children!");
@@ -448,10 +482,245 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		}
 		SimpleNode firstChild = (SimpleNode) node.children[0];
 		int firstChildId = firstChild.getId();
-		
-		
-		
+
+		ArrayList<VarNode> removeList = new ArrayList<VarNode>();
+		XContext removeContext = new XContext();
+		int removeFlag = 0;
+		switch (firstChildId) {
+		case JJTCOND:
+			Object removeOb = (ArrayList<VarNode>) firstChild.jjtAccept(this,
+					newContext);
+			if (removeOb instanceof XContext) {
+				removeFlag = REMOVE_CONTEXT;
+				removeContext = (XContext) removeOb;
+				if (childrenNum == 1)
+					return removeContext;
+			} else {
+				removeFlag = REMOVE_LIST;
+				removeList = (ArrayList<VarNode>) removeOb;
+				if (childrenNum == 1)
+					return removeList;
+			}
+			break;
+
+		case JJTXQ:
+			assert (childrenNum >= 3);
+			VariableKeeper xqResult1 = (VariableKeeper) firstChild.jjtAccept(
+					this, data);
+			SimpleNode secondChild = (SimpleNode) node.children[1];
+			int secondChildId = secondChild.getId();
+			SimpleNode thirdChild = (SimpleNode) node.children[2];
+			int thirdChildId = thirdChild.getId();
+			assert (thirdChildId == JJTXQ);
+			switch (secondChildId) {
+			case JJTEQ:
+			case JJTIS:
+				VariableKeeper xqResult2 = (VariableKeeper) thirdChild
+						.jjtAccept(this, data);
+				int operation = (secondChildId == JJTEQ ? VariableKeeper.EQ_DISJOINT
+						: VariableKeeper.IS_DISJOINT);
+				removeList.addAll(xqResult1.DisJoint(xqResult2, operation));
+				removeFlag = REMOVE_LIST;
+				break;
+			default:
+				log.ErrorLog("Evaluating Cond, encountered unexpected second child:"
+						+ jjtNodeName[secondChildId]
+						+ " after XQ as the first child.");
+				break;
+			}
+			if (childrenNum == 3) {
+				log.DebugLog("!!!Debug point: removelist size:"
+						+ removeList.size());
+				log.DebugLog("Node info name:" + removeList.get(0).name
+						+ " nodename" + removeList.get(0).node.getNodeValue());
+				return removeList;
+			}
+			break;
+		case JJTEMPTY:
+			secondChild = (SimpleNode) node.children[1];
+			secondChildId = secondChild.getId();
+			assert (secondChildId == JJTXQ);
+			VariableKeeper xqResult = (VariableKeeper) secondChild.jjtAccept(
+					this, data);
+
+			if (xqResult == null || xqResult.size() == 0) {
+				removeList = new ArrayList<VarNode>();
+				removeFlag = REMOVE_LIST;
+				if (childrenNum == 2) {
+					return removeList;
+				}
+			} else {
+				removeContext = (XContext) data;
+				removeFlag = REMOVE_CONTEXT;
+				if (childrenNum == 2)
+					return removeContext;
+			}
+			break;
+		case JJTSOME:
+			XContext someResult = null;
+			XContext tmpContext = ((XContext) data).clone();
+			boolean canReturn = false;
+			removeFlag = REMOVE_LIST;
+			if (((SimpleNode) node.children[childrenNum - 2]).getId() == JJTAND
+					|| ((SimpleNode) node.children[childrenNum - 2]).getId() == JJTOR) {
+				AST_COND tmp = new AST_COND(JJTCOND);
+				for (int i = 0; i < childrenNum - 2; i++) {
+					tmp.jjtAddChild(node.children[i], i);
+				}
+				someResult = EvaluateSome(tmp, (XContext) data);
+			} else {
+				canReturn = true;
+				someResult = EvaluateSome(node, (XContext) data);
+			}
+			for (String varName : tmpContext.GetVarNames()) {
+				if (someResult.Lookup(varName) == null
+						|| someResult.Lookup(varName).size() == 0) {
+					removeList.addAll(tmpContext.Lookup(varName)
+							.GetVarNodeList());
+				}
+			}
+			if (canReturn)
+				return removeList;
+			break;
+		case JJTNOT:
+			secondChild = (SimpleNode) node.children[1];
+			secondChildId = secondChild.getId();
+			assert (secondChildId == JJTCOND);
+			removeOb = (ArrayList<VarNode>) secondChild.jjtAccept(this,
+					newContext);
+			removeFlag = REMOVE_LIST;
+			if (removeOb instanceof XContext) {
+				removeList = new ArrayList<VarNode>();
+			} else {
+				ArrayList<VarNode> wholeList = new ArrayList<VarNode>();
+				for (String varName : newContext.GetVarNames()) {
+					wholeList.addAll(newContext.Lookup(varName)
+							.GetVarNodeList());
+				}
+				ArrayList<VarNode> tmpRemoveList = (ArrayList<VarNode>) removeOb;
+				for (VarNode varNode : tmpRemoveList) {
+					wholeList.remove(varNode);
+				}
+				removeList = wholeList;
+				if (childrenNum == 2) {
+					return removeList;
+				}
+			}
+			break;
+		default:
+			log.ErrorLog("Encoumtered unxepected first child:"
+					+ jjtNodeName[firstChildId]);
+			break;
+		}
+
+		SimpleNode operatorNode = (SimpleNode) node.children[childrenNum - 2];
+		int operatorId = operatorNode.getId();
+		assert (operatorId == JJTAND || operatorId == JJTOR);
+		Object removeOb = node.children[childrenNum - 1].jjtAccept(this,
+				newContext);
+		if (operatorId == JJTAND) {
+			// make union and return
+			if (removeFlag == REMOVE_CONTEXT) {
+				return removeContext;
+			} else if (removeFlag == REMOVE_LIST) {
+				if (removeOb instanceof XContext) {
+					return (XContext) removeOb;
+				} else {
+					return Union(removeList, (ArrayList<VarNode>) removeOb);
+				}
+			} else {
+				log.ErrorLog("Remove Flag has unexpected value!!!");
+			}
+		} else {
+			// make overlap and return
+			if (removeFlag == REMOVE_CONTEXT) {
+				return removeOb;
+			} else {
+				if (removeOb instanceof XContext) {
+					return removeList;
+				} else {
+					return Intersect(removeList, (ArrayList<VarNode>) removeOb);
+				}
+			}
+		}
+
+		log.ErrorLog("Returning at the end of Cond, not expected!!");
 		return data;
+	}
+
+	private XContext EvaluateSome(AST_COND node, XContext context) {
+		XContext result = context.clone();
+		// bind variables:
+		int childrenNum = node.jjtGetNumChildren();
+		assert ((childrenNum - 1) % 3 == 0);
+		int loopNum = (childrenNum - 1) / 3;
+		for (int i = 0; i < loopNum; i++) {
+			SimpleNode firstNode = ((SimpleNode) node.children[i * 3]);
+			assert (firstNode.getId() == JJTSOME || firstNode.getId() == JJTCOMMA);
+			SimpleNode secondNode = ((SimpleNode) node.children[i * 3 + 1]);
+			SimpleNode thirdNode = ((SimpleNode) node.children[i * 3 + 2]);
+			assert (secondNode.getId() == JJTVAR && thirdNode.getId() == JJTXQ);
+			String name = secondNode.getText();
+			VariableKeeper xqVar = (VariableKeeper) thirdNode.jjtAccept(this,
+					result);
+			result.Extend(name, xqVar);
+		}
+		SimpleNode lastNode = (SimpleNode) node.children[childrenNum - 1];
+		assert (lastNode.getId() == JJTCOND);
+		Object condResult = lastNode.jjtAccept(this, result);
+		if (condResult instanceof XContext) {
+			return context;
+		} else {
+			ArrayList<VarNode> removeList = (ArrayList<VarNode>) condResult;
+			for (VarNode varNode : removeList) {
+				try {
+					result.Lookup(varNode.name).RemoveNode(varNode.node);
+				} catch (NullPointerException e) {
+
+				}
+			}
+			XContext finalResult = context.clone();
+			for (String varName : result.GetVarNames()) {
+				if (result.Lookup(varName) == null
+						|| result.Lookup(varName).size() == 0) {
+					finalResult.Remove(varName);
+				}
+			}
+			return finalResult;
+		}
+	}
+
+	public ArrayList<VarNode> Intersect(ArrayList<VarNode> a,
+			ArrayList<VarNode> b) {
+		ArrayList<VarNode> result = new ArrayList<VarNode>();
+		for (VarNode varNode : a) {
+			for (VarNode node2 : b) {
+				if (a.equals(b)) {
+					result.add(varNode.clone());
+				}
+			}
+		}
+		return result;
+	}
+
+	public ArrayList<VarNode> Union(ArrayList<VarNode> a, ArrayList<VarNode> b) {
+		ArrayList<VarNode> result = new ArrayList<VarNode>();
+		for (VarNode varNode : a) {
+			result.add(varNode.clone());
+		}
+		for (VarNode varNode : b) {
+			boolean addFlag = true;
+			for (VarNode compare : a) {
+				if (a.equals(b)) {
+					addFlag = false;
+					break;
+				}
+			}
+			if (addFlag) {
+				result.add(varNode.clone());
+			}
+		}
+		return result;
 	}
 
 	/*
@@ -613,6 +882,18 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public Object visit(AST_Or node, Object data) {
 		log.RegularLog("Visit: AST_Or" + " <" + node.jjtGetNumChildren() + ">");
 		data = node.childrenAccept(this, data);
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visit(AST_Empty node, Object data) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visit(AST_Some node, Object data) {
 		// TODO Auto-generated method stub
 		return null;
 	}

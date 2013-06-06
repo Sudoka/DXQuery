@@ -1,4 +1,4 @@
-options {
+options	{
     MULTI=true;
     NODE_DEFAULT_VOID=false;
     VISITOR=true;
@@ -15,7 +15,7 @@ PARSER_END( XQueryParser)
 
     AST_Root query()  #Root       : {}  
 {
-    //( xQuery() ) { return jjtThis; } 
+    //( cond() ) { return jjtThis; } 
     ( xQuery() ) { return jjtThis; } 
     //( absolutePath() ) { return jjtThis; } 
 } 
@@ -88,7 +88,7 @@ void xQuery2()      #void   :   {}
 {   LOOKAHEAD(2) ( <SINGLELASH>#SingleSlash relativePath() 
         | <DOUBLESLASH>#DoubleSlash relativePath() ) xQuery2()
     | LOOKAHEAD((","<VAR><ASSIGN>) | (","<VAR><IN>)) {}
-    | ","#Comma xQuery()
+| ","#Comma xQuery()
     | {}
 }
 
@@ -114,10 +114,12 @@ void returnClause() #RETURNCLAUSE(>0)   :   {}
 }
 
 void cond()         #COND       :   {}
-{ <EMPTY>"(" xQuery() ")" cond2()
-    | ( <SOME> var() <IN> xQuery() 
+{ <EMPTY>#Empty"(" xQuery() ")" cond2()
+    | ( <SOME>#Some var() <IN> xQuery() 
             ( ","#Comma var() <IN> xQuery() )* <SATISFIES> cond() cond2()
       )
+        | LOOKAHEAD(3)"(" cond() ")" cond2()
+        | <NOT>#Not cond() cond2()
         |
         ( xQuery() 
           ( LOOKAHEAD(2) <IS>#Is xQuery() cond2() 
@@ -127,8 +129,8 @@ void cond()         #COND       :   {}
 }
 
 void cond2()    #void   :   {}
-{   <AND> cond() cond2()
-    | <OR> cond() cond2()
+{   <AND>#And cond() cond2()
+    | <OR>#Or cond() cond2()
         |{}
 }
 

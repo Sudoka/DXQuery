@@ -26,9 +26,11 @@ public interface XQueryParserVisitor
   public Object visit(AST_WHERECLAUSE node, Object data);
   public Object visit(AST_RETURNCLAUSE node, Object data);
   public Object visit(AST_COND node, Object data);
+  public Object visit(AST_Empty node, Object data);
+  public Object visit(AST_Some node, Object data);
   public Object visit(AST_FILENAME node, Object data);
   public Object visit(AST_VAR node, Object data);
   public Object visit(AST_STRING node, Object data);
   public Object visit(AST_TAGNAME node, Object data);
 }
-/* JavaCC - OriginalChecksum=7386b8f56a8d6ef6910a306409bd5d34 (do not edit this line) */
+/* JavaCC - OriginalChecksum=5c442f51ccaff9a4cc0d5b52fd85d819 (do not edit this line) */

@@ -542,7 +542,7 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 		return false;
 	}
 
-	private boolean CheckEQ(Node a, Node b) {
+	public static boolean CheckEQ(Node a, Node b) {
 		if (a == null || b == null) {
 			// Warning: here we treat two nulls as equal
 			if (a == null && b == null)

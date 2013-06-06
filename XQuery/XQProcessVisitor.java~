@@ -29,6 +29,9 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public org.w3c.dom.Node root;
 	public Document doc;
 
+	public final int REMOVE_LIST = 1;
+	public final int REMOVE_CONTEXT = 2;
+
 	public XQProcessVisitor() {
 		log = new DebugLogger("XQProcessVisitor");
 		processor = new NodeProcessor();
@@ -56,11 +59,15 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public Object visit(AST_Root node, Object data) {
 		log.RegularLog("Visit: AST_Root" + " <" + node.jjtGetNumChildren()
 				+ ">");
-		XContext context = new XContext();
 		// root should only has one node, which is AST_XQ
 		assert (node.jjtGetNumChildren() == 1);
-		data = node.childrenAccept(this, context);
-		return data;
+		VariableKeeper result = (VariableKeeper) node.children[0].jjtAccept(
+				this, new XContext());
+		log.DebugLog("Got result size:" + result.size());
+		for (Node n : result.GetNodes()) {
+			log.DebugLog("Node:" + n.getNodeName());
+		}
+		return result;
 	}
 
 	/*
@@ -160,7 +167,6 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			log.ErrorLog("An XQ node should not have 0 children!");
 			return null;
 		}
-		XContext updatedContext = null;
 		SimpleNode firstChild = (SimpleNode) node.children[0];
 
 		int firstChildId = firstChild.getId();
@@ -175,7 +181,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			result.SimpleAddNodeList(apResult);
 			return result;
 		case JJTTAGNAME:
-			assert (childrenNum == 3);
+
 			String tag1 = firstChild.getText();
 			String tag2 = node.children[2].getText();
 			assert (tag1.equals(tag2));
@@ -187,13 +193,14 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				newRoot.appendChild(n);
 			}
 			ArrayList<Object> tmpAdd = new ArrayList<Object>();
-			log.DebugLog("Warning: Visiting XQ encountered Tagname, the next "
-					+ "operation make failed to cast from Element to Node!");
 			tmpAdd.add(newRoot);
 			result.SimpleAddNodeList(tmpAdd);
-			return result;
-			// appearance of Var in the first child does not imply much on the
-			// production rule
+			if (childrenNum == 3) {
+				return result;
+			}
+			break;
+		// appearance of Var in the first child does not imply much on the
+		// production rule
 		case JJTVAR:
 			String name = ((AST_VAR) firstChild).getText();
 			VariableKeeper tmpResult = ((XContext) data).Lookup(name);
@@ -308,6 +315,14 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			XContext thirdContext = (XContext) thirdChild.jjtAccept(this,
 					secondContext);
 			return fourthChild.jjtAccept(this, thirdContext);
+		case 5:
+			SimpleNode fifthChild = (SimpleNode) node.children[4];
+			int fifthChildId = fifthChild.getId();
+			assert (fifthChildId == JJTXQ);
+			VariableKeeper result2 = (VariableKeeper) fifthChild.jjtAccept(
+					this, data);
+			VariableKeeper finalResult = result.CreateByMerge(result2);
+			return finalResult;
 		default:
 			secondChild = (SimpleNode) node.children[1];
 			secondChildId = secondChild.getId();
@@ -322,7 +337,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 					+ jjtNodeName[fourthChildId] + "] !");
 			break;
 		}
-		log.DebugLog("Returned result at the very end of XQ!");
+		log.ErrorLog("Returned result at the very end of XQ!");
 		return result;
 	}
 
@@ -336,9 +351,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public Object visit(AST_FORCLAUSE node, Object data) {
 		log.RegularLog("Visit: AST_FORCLAUSE" + " <" + node.jjtGetNumChildren()
 				+ ">");
-		data = node.childrenAccept(this, data);
-		// TODO Auto-generated method stub
-		return data;
+		return VisitLetOrFor(node, data);
 	}
 
 	/*
@@ -351,24 +364,43 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public Object visit(AST_LETCLAUSE node, Object data) {
 		log.RegularLog("Visit: AST_LETCLAUSE" + " <" + node.jjtGetNumChildren()
 				+ ">");
-		data = node.childrenAccept(this, data);
-		// TODO Auto-generated method stub
-		return data;
+		return VisitLetOrFor(node, data);
 	}
 
-	/*
-	 * (non-Javadoc)
+	/**
+	 * For clause and Let clase has exactly the same structure, so here we can
+	 * use one subroutine to process these two nodes.
 	 * 
-	 * @see XQuery.XQueryParserVisitor#visit(XQuery.AST_WHERECLAUSE,
-	 * java.lang.Object)
+	 * @param node
+	 *            a for node or a let node
+	 * @param data
+	 *            the context
+	 * @return a new context with all the new variables bindings
 	 */
-	@Override
-	public Object visit(AST_WHERECLAUSE node, Object data) {
-		log.RegularLog("Visit: AST_WHERECLAUSE" + " <"
-				+ node.jjtGetNumChildren() + ">");
-		data = node.childrenAccept(this, data);
-		// TODO Auto-generated method stub
-		return data;
+	private Object VisitLetOrFor(SimpleNode node, Object data) {
+		assert (node instanceof AST_FORCLAUSE || node instanceof AST_LETCLAUSE);
+		XContext result = ((XContext) data).clone();
+		XContext context = (XContext) data;
+		log.ErrorLog("If assertion failure occurs here, the children"
+				+ " number of for clause has problem!");
+		assert ((node.jjtGetNumChildren() + 1) % 3 == 0);
+		int varNum = (node.jjtGetNumChildren() + 1) / 3;
+		for (int i = 0; i < varNum; i++) {
+			SimpleNode xqNode = (SimpleNode) node.children[i * 3 + 1];
+			SimpleNode nameNode = (SimpleNode) node.children[i * 3];
+			log.DebugLog("xqNode:" + jjtNodeName[xqNode.getId()] + "; varNode:"
+					+ jjtNodeName[nameNode.getId()]);
+			assert (xqNode.getId() == JJTXQ && nameNode.getId() == JJTVAR);
+			String varName = nameNode.getText();
+			// get the value
+			VariableKeeper xqResult = (VariableKeeper) xqNode.jjtAccept(this,
+					result);
+			// set name to the value
+			xqResult.SetName(varName);
+			// bind the value to variable
+			result.Extend(varName, xqResult);
+		}
+		return result;
 	}
 
 	/*
@@ -381,9 +413,28 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public Object visit(AST_RETURNCLAUSE node, Object data) {
 		log.RegularLog("Visit: AST_RETURNCLAUSE" + " <"
 				+ node.jjtGetNumChildren() + ">");
-		data = node.childrenAccept(this, data);
-		// TODO Auto-generated method stub
-		return data;
+		assert (node.jjtGetNumChildren() == 1);
+		SimpleNode xqNode = (SimpleNode) node.children[0];
+		assert (xqNode.getId() == JJTXQ);
+		return xqNode.jjtAccept(this, data);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see XQuery.XQueryParserVisitor#visit(XQuery.AST_WHERECLAUSE,
+	 * java.lang.Object)
+	 */
+	@Override
+	public Object visit(AST_WHERECLAUSE node, Object data) {
+		log.RegularLog("Visit: AST_WHERECLAUSE" + " <"
+				+ node.jjtGetNumChildren() + ">");
+		assert (node.jjtGetNumChildren() == 1);
+		XContext newContext = ((XContext) data).clone();
+		// TODO: add more code here to remove the unsatisified nodes
+		ArrayList<VarNode> toBeRemoved = (ArrayList<VarNode>) node.children[0]
+				.jjtAccept(this, newContext);
+		return newContext;
 	}
 
 	/*
@@ -395,8 +446,49 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public Object visit(AST_COND node, Object data) {
 		log.RegularLog("Visit: AST_COND" + " <" + node.jjtGetNumChildren()
 				+ ">");
-		data = node.childrenAccept(this, data);
-		// TODO Auto-generated method stub
+		XContext newContext = ((XContext) data).clone();
+
+		int childrenNum = node.jjtGetNumChildren();
+		if (childrenNum == 0) {
+			log.ErrorLog("An Cond node should not have 0 children!");
+			return null;
+		}
+		SimpleNode firstChild = (SimpleNode) node.children[0];
+		int firstChildId = firstChild.getId();
+
+		ArrayList<VarNode> removeList = new ArrayList<VarNode>();
+		XContext removeContext = new XContext();
+		int removeFlag = 0;
+		switch (firstChildId) {
+		case JJTCOND:
+			Object removeOb = (ArrayList<VarNode>) firstChild.jjtAccept(this,
+					newContext);
+			if (removeOb instanceof XContext) {
+				removeFlag = REMOVE_CONTEXT;
+				removeContext = (XContext) removeOb;
+			} else {
+				removeFlag = REMOVE_LIST;
+				removeList = (ArrayList<VarNode>) removeOb;
+			}
+			break;
+
+		case JJTXQ:
+			VariableKeeper xqResult = (VariableKeeper) firstChild.jjtAccept(
+					this, data);
+			
+			break;
+
+		case JJTEMPTY:
+			assert (childrenNum == 2);
+
+			break;
+
+		case JJTSOME:
+			break;
+		default:
+			break;
+		}
+
 		return data;
 	}
 
@@ -559,6 +651,18 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public Object visit(AST_Or node, Object data) {
 		log.RegularLog("Visit: AST_Or" + " <" + node.jjtGetNumChildren() + ">");
 		data = node.childrenAccept(this, data);
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visit(AST_Empty node, Object data) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visit(AST_Some node, Object data) {
 		// TODO Auto-generated method stub
 		return null;
 	}

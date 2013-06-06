@@ -3,12 +3,14 @@ package XQuery;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import org.w3c.dom.Node;
 
 public class VariableKeeper {
+	public static final int EQ_DISJOINT = 1;
+	public static final int IS_DISJOINT = 2;
+
 	// hashmap used as index for hash join
 	private HashMap<Node, ArrayList<VarNode>> hashIndex = null;
 
@@ -89,6 +91,61 @@ public class VariableKeeper {
 
 	public int size() {
 		return hashIndex.size();
+	}
+
+	public void RemoveNode(Node node) {
+		linkedData.remove(hashIndex.get(node));
+		hashIndex.remove(node);
+	}
+
+	// this method may need to optimize for performance
+	public ArrayList<VarNode> DisJoint(VariableKeeper var, int operation) {
+		ArrayList<VarNode> result = new ArrayList<VarNode>();
+		result.addAll(FindDifferent(this, var, operation));
+		result.addAll(FindDifferent(var, this, operation));
+		return result;
+	}
+
+	private ArrayList<VarNode> FindDifferent(VariableKeeper main,
+			VariableKeeper compare, int operation) {
+		ArrayList<VarNode> result = new ArrayList<VarNode>();
+
+		for (Node mainNode : main.hashIndex.keySet()) {
+			boolean uniqueFlag = true;
+			for (Node compareNode : compare.hashIndex.keySet()) {
+				if (operation == EQ_DISJOINT) {
+					if (NodeProcessor.CheckEQ(mainNode, compareNode)) {
+						uniqueFlag = false;
+						break;
+					}
+				} else if (operation == IS_DISJOINT) {
+					if (mainNode.isSameNode(compareNode)) {
+						uniqueFlag = false;
+						break;
+					}
+				} else {
+					log.ErrorLog("Unknow operation type in DisJoint!");
+					return null;
+				}
+			}
+			if (uniqueFlag) {
+				VarNode addNode = new VarNode(main.Name, mainNode);
+				result.add(addNode);
+			}
+		}
+		return result;
+	}
+
+	public ArrayList<VarNode> GetVarNodeList() {
+		if (this.Name == null || this.Name == "") {
+			return null;
+		}
+		ArrayList<VarNode> result = new ArrayList<VarNode>();
+		for (ArrayList<VarNode> varList : linkedData) {
+			assert (varList.get(varList.size() - 1).name.equals(this.Name));
+			result.add(varList.get(varList.size() - 1));
+		}
+		return result;
 	}
 
 	/**
@@ -222,11 +279,22 @@ class VarNode {
 	}
 
 	public VarNode(String name, Node node) {
-		this.name = new String(name);
+		if (name == null)
+			this.name = "";
+		else
+			this.name = new String(name);
 		this.node = node;
 	}
 
 	public VarNode clone() {
 		return new VarNode(new String(this.name), this.node);
+	}
+
+	public boolean equals(VarNode v) {
+		assert ((v.node.isSameNode(node)) == (v.node == node));
+		if (v.name.equals(this.name) && v.node.isSameNode(node)) {
+			return true;
+		}
+		return false;
 	}
 }

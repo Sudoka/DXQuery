@@ -3,6 +3,8 @@
 package XQuery;
 
 import java.util.ArrayList;
+
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 public class AST_RP extends SimpleNode {
@@ -30,8 +32,8 @@ public class AST_RP extends SimpleNode {
 	 * @param domOperation
 	 * @return
 	 */
-	public VariableKeeper EvaluateRPUnderVariable(VariableKeeper var,
-			AST_RP node, int domOperation) {
+	public VariableKeeper EvaluateRPUnderVariable(Document doc,
+			VariableKeeper var, AST_RP node, int domOperation) {
 		NodeProcessor np = new NodeProcessor();
 		if (var == null) {
 			return new VariableKeeper();
@@ -64,8 +66,16 @@ public class AST_RP extends SimpleNode {
 				}
 				// iterate over the result got from RP
 				for (Object ob : tmpRPresult) {
-					// build a new varnode for this node ob
-					Node n = (Node) ob;
+					Node n = null;
+					if (ob instanceof Node) {
+						// build a new varnode for this node ob
+						n = (Node) ob;
+					} else if (ob instanceof String) {
+						n = doc.createTextNode((String) ob);
+					} else {
+						log.ErrorLog("#line 76 Encountered unexpected node type!");
+					}
+
 					VarNode vn = new VarNode("", n);
 
 					// get the clone of the link data
@@ -83,7 +93,7 @@ public class AST_RP extends SimpleNode {
 					int oldSize = var.GetLinkData(o) == null ? 0 : var
 							.GetLinkData(o).size();
 					// log.DebugLog("new size:" + result.GetLinkData(n).size()
-					//		+ "; old size:" + oldSize);
+					// + "; old size:" + oldSize);
 					assert ((result.GetLinkData(n).size() - oldSize) == 1);
 				}
 			}

@@ -1,6 +1,8 @@
 package XQuery;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 
 public class XContext {
 
@@ -22,6 +24,10 @@ public class XContext {
 		return newContext;
 	}
 
+	public void Remove(String varName) {
+		context.remove(varName);
+	}
+
 	public void Extend(String var, VariableKeeper value) {
 		value.SetName(var);
 		context.put(var, value);
@@ -31,5 +37,27 @@ public class XContext {
 		// here we assume that, there is not variable in the context binds to
 		// null
 		return context.get(var);
+	}
+
+	public Set<String> GetVarNames() {
+		return context.keySet();
+	}
+
+	public void RemoveVarNodeAndLinkData(VarNode node) {
+		RecursiveRemove(node);
+	}
+
+	private void RecursiveRemove(VarNode node) {
+		if (node.name == null || context.get(node.name) == null) {
+			log.DebugLog("Damn no node name!!");
+			return;
+		} else {
+			ArrayList<VarNode> linkNodes = context.get(node.name).GetLinkData(
+					node.node);
+			for (VarNode varNode : linkNodes) {
+				RecursiveRemove(varNode);
+			}
+		}
+
 	}
 }

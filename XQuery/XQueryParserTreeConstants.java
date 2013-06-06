@@ -26,10 +26,12 @@ public interface XQueryParserTreeConstants
   public int JJTWHERECLAUSE = 20;
   public int JJTRETURNCLAUSE = 21;
   public int JJTCOND = 22;
-  public int JJTFILENAME = 23;
-  public int JJTVAR = 24;
-  public int JJTSTRING = 25;
-  public int JJTTAGNAME = 26;
+  public int JJTEMPTY = 23;
+  public int JJTSOME = 24;
+  public int JJTFILENAME = 25;
+  public int JJTVAR = 26;
+  public int JJTSTRING = 27;
+  public int JJTTAGNAME = 28;
 
 
   public String[] jjtNodeName = {
@@ -56,10 +58,12 @@ public interface XQueryParserTreeConstants
     "WHERECLAUSE",
     "RETURNCLAUSE",
     "COND",
+    "Empty",
+    "Some",
     "FILENAME",
     "VAR",
     "STRING",
     "TAGNAME",
   };
 }
-/* JavaCC - OriginalChecksum=b57fead9d6b85c190f15a1b85a4d4f51 (do not edit this line) */
+/* JavaCC - OriginalChecksum=c9936f43c24f0705cefc0c41f7462064 (do not edit this line) */
