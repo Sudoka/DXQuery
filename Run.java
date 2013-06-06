@@ -53,7 +53,8 @@ public class Run implements XQueryParserTreeConstants {
 		System.out.println(teststr.trim().length());
 
 		String testAP = "for $b in doc(\"bib.xml\")/bib, $c in $b/book/year return <test>{$c}</test>";
-		new Run().runQuery(testAP);
+		String testLet = "let $b := doc(\"bib.xml\")/bib, $c := $b/book for $d in $c/year return $d";
+		new Run().runQuery(testLet);
 	}
 
 	void runQuery(String queryStr)

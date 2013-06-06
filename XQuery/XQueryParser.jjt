@@ -15,6 +15,7 @@ PARSER_END( XQueryParser)
 
     AST_Root query()  #Root       : {}  
 {
+    //( xQuery() ) { return jjtThis; } 
     ( xQuery() ) { return jjtThis; } 
     //( absolutePath() ) { return jjtThis; } 
 } 
