@@ -3,6 +3,7 @@
  */
 package XQuery;
 
+import org.apache.xerces.dom.DocumentImpl;
 import org.apache.xerces.parsers.DOMParser;
 
 import org.w3c.dom.Attr;
@@ -211,9 +212,10 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			AST_XQ secondChild = (AST_XQ) node.children[1];
 			VariableKeeper tmpXQ = (VariableKeeper) secondChild.jjtAccept(this,
 					data);
-			Element newRoot = doc.createElement(tag1);
+			DocumentImpl docNew = new DocumentImpl();
+			Element newRoot = docNew.createElement(tag1);
 			for (Node n : tmpXQ.GetNodes()) {
-				newRoot.appendChild(n);
+				newRoot.appendChild(docNew.importNode(n, true));
 			}
 			ArrayList<Object> tmpAdd = new ArrayList<Object>();
 			tmpAdd.add(newRoot);
@@ -235,7 +237,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			break;
 		case JJTSTRING:
 			String string = firstChild.getText();
-			string = new String(string.substring(1, string.length()-1));
+			string = new String(string.substring(1, string.length() - 1));
 			Node newTextNode = doc.createTextNode(string);
 			tmpAdd = new ArrayList<Object>();
 			tmpAdd.add(newTextNode);
@@ -470,6 +472,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		} else {
 			VariableKeeper removeList = (VariableKeeper) toBeRemoved;
 			log.DebugLog("In Where, to be removed:" + removeList.size());
+			removeList.PrintAllVars();
 			newContext.RecursiveRemoveVariableKeeper(removeList);
 			return newContext;
 		}
@@ -534,6 +537,8 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				int operation = (secondChildId == JJTEQ ? VariableKeeper.EQ_DISJOINT
 						: VariableKeeper.IS_DISJOINT);
 				removeList = xqResult1.DisJoint(xqResult2, operation);
+				System.out.println("-------------------------");
+				removeList.PrintAllVars();
 				removeFlag = REMOVE_VARKEEPER;
 				break;
 			default:

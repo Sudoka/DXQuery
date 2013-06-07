@@ -99,8 +99,12 @@ public class VariableKeeper {
 	}
 
 	public void Subtract(VariableKeeper sub) {
-		for (Node node : sub.GetNodes()) {
+		for (Node node : sub.hashIndex.keySet()) {
 			RemoveNode(node);
+			ArrayList<VarNode> varNodeList = sub.hashIndex.get(node);
+			for (VarNode varNode : varNodeList) {
+				RemoveNode(varNode.node);
+			}
 		}
 	}
 
@@ -114,11 +118,14 @@ public class VariableKeeper {
 
 	// this method may need to optimize for performance
 	public VariableKeeper DisJoint(VariableKeeper var, int operation) {
-		VariableKeeper result = new VariableKeeper();
-		VariableKeeper result2 = result.CreateByMerge(FindDifferent(this, var,
-				operation));
+		// VariableKeeper result = new VariableKeeper();
+		VariableKeeper result2 = FindDifferent(this, var, operation);
+		// System.err.println("test1:\n");
+		// FindDifferent(this, var, operation).PrintAllVars();
 		VariableKeeper finalResult = result2.CreateByMerge(FindDifferent(var,
 				this, operation));
+		// System.err.println("test2:\n");
+		// FindDifferent(var, this, operation);
 		return finalResult;
 	}
 

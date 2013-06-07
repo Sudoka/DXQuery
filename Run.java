@@ -28,12 +28,13 @@ public class Run implements XQueryParserTreeConstants {
 		String testbib = "<result>{\n"
 				+"for $a in doc(\"bib.xml\")//book,\n"
 				+"    $sc in $a//author,\n"
-				+"    $sp in $sc/last\n"
-				+"where $sp/text() == \"Lorant\"\n"
+				+"    $sp in $sc/last,\n"
+				+"    $x in doc(\"bib.xml\")//reviews\n"
+				+"where $sp/text() = \"Lorant\"\n"
 				+"return <title>{$a//title/text()}</title>,\n"
 				+"        <YearPrice>{\n"
-				+"            <year>{$sc//first/text()}</year>,\n"
-				+"            <price>{$sp/text()}</price>\n"
+				+"            <first>{$sc//first/text()}</first>,\n"
+				+"            <price>{$x//price/text()}</price>\n"
 				+"        }</YearPrice>\n"
 				+"}</result>\n";
 
