@@ -82,6 +82,7 @@ public class Run implements XQueryParserTreeConstants {
 		String testCond3 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
 				+ "$tb in $b/title,\n $tt in $t//title\n"
 				+ "where not($tb/text() = $tt/text())\n" + "return $tb";
+//		DebugLogger.MasterRegularLog= false;
 		new Run().runQuery(testbib);
 	}
 

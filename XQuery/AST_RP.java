@@ -4,7 +4,7 @@ package XQuery;
 
 import java.util.ArrayList;
 
-import org.w3c.dom.Document;
+import org.apache.xerces.dom.DocumentImpl;
 import org.w3c.dom.Node;
 
 public class AST_RP extends SimpleNode {
@@ -26,14 +26,14 @@ public class AST_RP extends SimpleNode {
 	 * NodeProcessor ProcessRP, we do not do unique here. Also, since we
 	 * evaluate each RP under different node, it's fair that we assume we don't
 	 * need to do unique on the combined results
-	 * 
 	 * @param var
 	 * @param node
 	 * @param domOperation
+	 * 
 	 * @return
 	 */
-	public VariableKeeper EvaluateRPUnderVariable(Document doc,
-			VariableKeeper var, AST_RP node, int domOperation) {
+	public VariableKeeper EvaluateRPUnderVariable(VariableKeeper var,
+			AST_RP node, int domOperation) {
 		NodeProcessor np = new NodeProcessor();
 		if (var == null) {
 			return new VariableKeeper();
@@ -48,7 +48,7 @@ public class AST_RP extends SimpleNode {
 				allNodes.addAll(np.ProcessRP(node, o, domOperation));
 			}
 			VariableKeeper result = new VariableKeeper();
-			result.SimpleAddNodeList(allNodes);
+			result.InitializeWithNodeList(allNodes);
 			return result;
 		} else {
 			VariableKeeper result = new VariableKeeper();
@@ -58,14 +58,6 @@ public class AST_RP extends SimpleNode {
 				// for each parent node, evaluate RP under it and get the result
 				ArrayList<Object> tmpRPresult = np.ProcessRP(node, o,
 						domOperation);
-//				log.DebugLog("In evaluateRPunderVariable, got RP result:");
-//				for (Object object : tmpRPresult) {
-//					if(object instanceof Node){
-//						System.out.println("Node name:"+((Node)object).getNodeName());
-//					}else if (object instanceof String){
-//						System.out.println("Got String!:"+((String)object));
-//					}
-//				}
 				// get the linked data of node o
 				ArrayList<VarNode> linkData = new ArrayList<VarNode>();
 				if (var.GetLinkData(o) != null) {
@@ -79,7 +71,8 @@ public class AST_RP extends SimpleNode {
 						// build a new varnode for this node ob
 						n = (Node) ob;
 					} else if (ob instanceof String) {
-						n = doc.createTextNode((String) ob);
+						DocumentImpl docNew = new DocumentImpl();
+						n = docNew.createTextNode((String) ob);
 					} else {
 						log.ErrorLog("#line 76 Encountered unexpected node type!");
 					}

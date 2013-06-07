@@ -26,6 +26,12 @@ public class VariableKeeper {
 		linkedData = new ArrayList<ArrayList<VarNode>>();
 	}
 
+	public VariableKeeper(ArrayList<Object> nodeList) {
+		hashIndex = new HashMap<Node, ArrayList<VarNode>>();
+		linkedData = new ArrayList<ArrayList<VarNode>>();
+		InitializeWithNodeList(nodeList);
+	}
+
 	public VariableKeeper CreateByMerge(VariableKeeper var) {
 		VariableKeeper result = new VariableKeeper();
 		VariableKeeper thisDummy = this.clone();
@@ -185,10 +191,10 @@ public class VariableKeeper {
 	 * @param list
 	 * @return
 	 */
-	public boolean SimpleAddNodeList(ArrayList<Object> list) {
+	public boolean InitializeWithNodeList(ArrayList<Object> list) {
 		if (linkedData != null && linkedData.size() > 0
 				&& linkedData.get(0).size() > 0) {
-			log.ErrorLog("SimpleAddNodeList should only be used on empty VK! "
+			log.ErrorLog("SimpleAddNodeList should only be used on empty VK!\n "
 					+ "This VK already has link data!");
 			return false;
 		}
@@ -326,7 +332,7 @@ class VarNode {
 
 	public boolean equals(VarNode v) {
 		assert ((v.node.isSameNode(node)) == (v.node == node));
-		if (v.name.equals(this.name) && v.node.isSameNode(node)) {
+		if (v.name.equals(this.name) && NodeProcessor.CheckEQ(v.node, node)) {
 			return true;
 		}
 		return false;

@@ -3,21 +3,13 @@
  */
 package XQuery;
 
-import org.apache.xerces.dom.DocumentImpl;
-import org.apache.xerces.parsers.DOMParser;
+import java.io.IOException;
+import java.util.ArrayList;
 
-import org.w3c.dom.Attr;
+import org.apache.xerces.dom.DocumentImpl;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
-import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.io.*;
-import java.lang.invoke.MethodHandles.Lookup;
 
 /**
  * @author QDX
@@ -27,9 +19,10 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		XQueryParserTreeConstants {
 
 	public DebugLogger log;
+	// used to process RP and PF node
 	public NodeProcessor processor;
 
-	public org.w3c.dom.Node root;
+	public Node root;
 	public Document doc;
 
 	public final int REMOVE_VARKEEPER = 1;
@@ -68,12 +61,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				this, new XContext());
 
 		log.DebugLog("Got result size:" + result.size());
-		// try {
-		// DOMPrinter.printXML(result.GetVarNodeList().get(0).node);
-		// } catch (IOException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// }
+
 		for (Node n : result.GetNodes()) {
 
 			log.DebugLog("Node:" + n.getNodeName());
@@ -83,7 +71,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			try {
 				System.out.println(DOMPrinter.printXML(n));
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
+				log.ErrorLog("Some kind of parse error caused by DOMPrinter");
 				e.printStackTrace();
 			}
 		}
@@ -110,7 +98,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		log.DebugLog(root.getNodeName());
 
 		for (XQuery.Node n : node.children) {
-			log.DebugLog(this.jjtNodeName[((SimpleNode) n).getId()]);
+			log.DebugLog(jjtNodeName[((SimpleNode) n).getId()]);
 		}
 
 		ArrayList<Object> result = null;
@@ -140,8 +128,9 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				}
 			}
 		}
+		// I have already handled all the situations, so no need to call
+		// childrenAccept
 		// node.childrenAccept(this, data);
-		// TODO Auto-generated method stub
 		return result;
 	}
 
@@ -153,10 +142,8 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	@Override
 	public Object visit(AST_RP node, Object data) {
 		log.RegularLog("Visit: AST_RP" + " <" + node.jjtGetNumChildren() + ">");
-
-		// data = node.childrenAccept(this, data);
-		// TODO Auto-generated method stub
-		return data;
+		// this procedure is replaced by method NodeProcess
+		return null;
 	}
 
 	/*
@@ -166,10 +153,9 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	 */
 	@Override
 	public Object visit(AST_PF node, Object data) {
-		log.RegularLog("Visit: ASP_PF");
-		data = node.childrenAccept(this, data);
-		// TODO Auto-generated method stub
-		return data;
+		log.RegularLog("Visit: ASP_PF" + " <" + node.jjtGetNumChildren() + ">");
+		// this procedure is replaced by method NodeProcess
+		return null;
 	}
 
 	/*
@@ -180,46 +166,51 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	@Override
 	public Object visit(AST_XQ node, Object data) {
 		log.RegularLog("Visit: AST_XQ" + " <" + node.jjtGetNumChildren() + ">");
-		if (!(data instanceof XContext)) {
-			log.ErrorLog("data not instanceof Context!");
-		}
+		//
+		assert (data instanceof XContext);
+		// To be returned
 		VariableKeeper result = new VariableKeeper();
+		// used as parameter for future AST nodes
 		XContext firstContext = null;
 
 		int childrenNum = node.jjtGetNumChildren();
-		if (childrenNum == 0) {
-			log.ErrorLog("An XQ node should not have 0 children!");
-			return null;
-		}
-		SimpleNode firstChild = (SimpleNode) node.children[0];
+		assert (childrenNum > 0);
 
+		SimpleNode firstChild = (SimpleNode) node.children[0];
 		int firstChildId = firstChild.getId();
+
 		switch (firstChildId) {
-		// encountering AP and Tag name can be done immediately
+		// AP be evaluated immediately
 		case JJTAP:
 			// appearance of AP at the first child implies this XQ only has one
 			// node
 			assert (childrenNum == 1);
+			@SuppressWarnings("unchecked")
 			ArrayList<Object> apResult = (ArrayList<Object>) ((AST_AP) firstChild)
 					.jjtAccept(this, data);
-			result.SimpleAddNodeList(apResult);
+			result.InitializeWithNodeList(apResult);
 			return result;
 		case JJTTAGNAME:
-
+			// get the start and end tags
 			String tag1 = firstChild.getText();
 			String tag2 = node.children[2].getText();
 			assert (tag1.equals(tag2));
+
+			// Evaluate XQ in middle of tag pair
 			AST_XQ secondChild = (AST_XQ) node.children[1];
 			VariableKeeper tmpXQ = (VariableKeeper) secondChild.jjtAccept(this,
 					data);
+			// used to create new node
 			DocumentImpl docNew = new DocumentImpl();
 			Element newRoot = docNew.createElement(tag1);
 			for (Node n : tmpXQ.GetNodes()) {
+				// A tricky step
 				newRoot.appendChild(docNew.importNode(n, true));
 			}
+			// a singleton list containing the evaluated result wrapped in tag
 			ArrayList<Object> tmpAdd = new ArrayList<Object>();
 			tmpAdd.add(newRoot);
-			result.SimpleAddNodeList(tmpAdd);
+			result.InitializeWithNodeList(tmpAdd);
 			if (childrenNum == 3) {
 				return result;
 			}
@@ -228,6 +219,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		// production rule
 		case JJTVAR:
 			String name = ((AST_VAR) firstChild).getText();
+			// lookup in the context and find out the current binding
 			VariableKeeper tmpResult = ((XContext) data).Lookup(name);
 			if (!(tmpResult == null)) {
 				result = tmpResult;
@@ -237,19 +229,25 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			break;
 		case JJTSTRING:
 			String string = firstChild.getText();
+			// get rid of \" and \" at the beginning and end of the String
+			// constant
 			string = new String(string.substring(1, string.length() - 1));
-			Node newTextNode = doc.createTextNode(string);
+			docNew = new DocumentImpl();
+			Node newTextNode = docNew.createTextNode(string);
+			// a singleton list to initialize result
 			tmpAdd = new ArrayList<Object>();
 			tmpAdd.add(newTextNode);
-			result.SimpleAddNodeList(tmpAdd);
+			result.InitializeWithNodeList(tmpAdd);
 			break;
 		case JJTXQ:
+			// record the value returned by this XQ
 			result = (VariableKeeper) firstChild.jjtAccept(this, data);
 			break;
 		case JJTFORCLAUSE:
 			assert (childrenNum >= 2);
 			// get new context from for clause, we will pass it to let where and
-			// return clause after this
+			// return clause after this. for clause only changes context var
+			// binding
 			firstContext = (XContext) firstChild.jjtAccept(this, data);
 			break;
 		case JJTLETCLAUSE:
@@ -259,21 +257,35 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			break;
 		default:
 			log.ErrorLog("Encountered unexpected first child:["
-					+ jjtNodeName[firstChildId] + "] with children number:<"
+					+ jjtNodeName[firstChildId] + "]\n with children number:<"
 					+ childrenNum + "> !");
 			break;
 		}
+		// this means, there is only one node and we have done all the work we
+		// should do, now return the result we got
 		if (childrenNum == 1) {
 			return result;
 		}
 
 		switch (childrenNum) {
+		// <Let XQ> or <For Return>, either case we have finished the
+		// evaluation of this XQ
 		case 2:
 			SimpleNode secondChild = (SimpleNode) node.children[1];
 			int secondChildId = secondChild.getId();
 			switch (secondChildId) {
+			/**
+			 * in this case, the previous node is a for clause, it updates the
+			 * context, here we pass the context to the return clause to
+			 * evaluate and give the final result
+			 */
 			case JJTRETURNCLAUSE:
 				return secondChild.jjtAccept(this, firstContext);
+				/**
+				 * in this case, the previous node is a let clause, which is
+				 * very similiar with for clause. we do exactly the same thing
+				 * as for clause
+				 */
 			case JJTXQ:
 				return secondChild.jjtAccept(this, firstContext);
 			default:
@@ -288,32 +300,42 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			SimpleNode thirdChild = (SimpleNode) node.children[2];
 			int thirdChildId = thirdChild.getId();
 			switch (secondChildId) {
+			/**
+			 * here the production rule is either XQ/RP or XQ//RP
+			 */
 			case JJTSINGLESLASH:
 			case JJTDOUBLESLASH:
 				assert (thirdChildId == JJTRP);
-				int opeartion = secondChildId == JJTSINGLESLASH ? DomOperations.RP_SIMPLE_FETCH
-						: DomOperations.RP_RECURSIVE_FETCH;
+				int opeartion = (secondChildId == JJTSINGLESLASH ? DomOperations.RP_SIMPLE_FETCH
+						: DomOperations.RP_RECURSIVE_FETCH);
 				VariableKeeper tmpResult = ((AST_RP) thirdChild)
-						.EvaluateRPUnderVariable(doc, result,
-								(AST_RP) thirdChild, opeartion);
+						.EvaluateRPUnderVariable(result, (AST_RP) thirdChild,
+								opeartion);
 				return tmpResult;
 			case JJTCOMMA:
 				assert (thirdChildId == JJTXQ);
 				/**
 				 * with comma, the xq on the left of comma and right of comma
 				 * should be evaluated under the same context, thus pass data as
-				 * parameter. Also,
+				 * parameter. Also, with comma, the production should be XQ,XQ
+				 * return the concatenated result
 				 */
 				VariableKeeper result2 = (VariableKeeper) thirdChild.jjtAccept(
 						this, data);
 				VariableKeeper finalResult = result.CreateByMerge(result2);
 				return finalResult;
 			case JJTLETCLAUSE:
+				/**
+				 * in this case, we got the production rule For Let Return
+				 */
 				assert (firstChildId == JJTFORCLAUSE && thirdChildId == JJTRETURNCLAUSE);
 				XContext secondContext = (XContext) secondChild.jjtAccept(this,
 						firstContext);
 				return thirdChild.jjtAccept(this, secondContext);
 			case JJTWHERECLAUSE:
+				/**
+				 * in this case, we got the production rule For Where Return
+				 */
 				assert (firstChildId == JJTFORCLAUSE && thirdChildId == JJTRETURNCLAUSE);
 				secondContext = (XContext) secondChild.jjtAccept(this,
 						firstContext);
@@ -327,6 +349,9 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			}
 			break;
 		case 4:
+			/**
+			 * here we have For Let Where Return
+			 */
 			secondChild = (SimpleNode) node.children[1];
 			secondChildId = secondChild.getId();
 			thirdChild = (SimpleNode) node.children[2];
@@ -342,6 +367,11 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 					secondContext);
 			return fourthChild.jjtAccept(this, thirdContext);
 		case 5:
+			/**
+			 * Here we have have <tag>{XQ}</tag>,XQ
+			 */
+			fourthChild = (SimpleNode) node.children[3];
+			fourthChildId = fourthChild.getId();
 			SimpleNode fifthChild = (SimpleNode) node.children[4];
 			int fifthChildId = fifthChild.getId();
 			assert (fifthChildId == JJTXQ);
@@ -394,7 +424,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	}
 
 	/**
-	 * For clause and Let clase has exactly the same structure, so here we can
+	 * For clause and Let clause has exactly the same structure, so here we can
 	 * use one subroutine to process these two nodes.
 	 * 
 	 * @param node
@@ -406,16 +436,14 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	private Object VisitLetOrFor(SimpleNode node, Object data) {
 		assert (node instanceof AST_FORCLAUSE || node instanceof AST_LETCLAUSE);
 		XContext result = ((XContext) data).clone();
-		XContext context = (XContext) data;
-		log.ErrorLog("If assertion failure occurs here, the children"
-				+ " number of for clause has problem!");
+		// If assertion failure occurs here, the children
+		// number of for clause has problem!
 		assert ((node.jjtGetNumChildren() + 1) % 3 == 0);
+		// we will need to make varNum amount of variable bindings
 		int varNum = (node.jjtGetNumChildren() + 1) / 3;
 		for (int i = 0; i < varNum; i++) {
 			SimpleNode nameNode = (SimpleNode) node.children[i * 3];
 			SimpleNode xqNode = (SimpleNode) node.children[i * 3 + 1];
-			log.DebugLog("xqNode:" + jjtNodeName[xqNode.getId()] + "; varNode:"
-					+ jjtNodeName[nameNode.getId()]);
 			assert (xqNode.getId() == JJTXQ && nameNode.getId() == JJTVAR);
 			String varName = nameNode.getText();
 			// get the value
@@ -426,14 +454,6 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			// bind the value to variable
 			result.Extend(varName, xqResult);
 		}
-		log.DebugLog("=>in VisitLetOrFor, here are the variable bindings:");
-		for (String varName : result.GetVarNames()) {
-			System.out.println(varName);
-			for (Node oneNode : result.Lookup(varName).GetNodes()) {
-				System.out.println(oneNode.getNodeName());
-			}
-		}
-
 		return result;
 	}
 
@@ -465,7 +485,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				+ node.jjtGetNumChildren() + ">");
 		assert (node.jjtGetNumChildren() == 1);
 		XContext newContext = ((XContext) data).clone();
-		// TODO: add more code here to remove the unsatisified nodes
+		// TODO: add more code here to remove the unsatisfied nodes
 		Object toBeRemoved = node.children[0].jjtAccept(this, newContext);
 		if (toBeRemoved instanceof XContext) {
 			return new XContext();
@@ -488,20 +508,21 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		log.RegularLog("Visit: AST_COND" + " <" + node.jjtGetNumChildren()
 				+ ">");
 		XContext newContext = ((XContext) data).clone();
-
 		int childrenNum = node.jjtGetNumChildren();
-		if (childrenNum == 0) {
-			log.ErrorLog("An Cond node should not have 0 children!");
-			return null;
-		}
+		assert(childrenNum != 0);
+		
 		SimpleNode firstChild = (SimpleNode) node.children[0];
 		int firstChildId = firstChild.getId();
 
+		// two return types
 		VariableKeeper removeList = new VariableKeeper();
 		XContext removeContext = new XContext();
+		
+		// indicator of what type of result to return 
 		int removeFlag = 0;
 		switch (firstChildId) {
 		case JJTCOND:
+			// (Cond)
 			Object removeOb = firstChild.jjtAccept(this, newContext);
 			if (removeOb instanceof XContext) {
 				removeFlag = REMOVE_CONTEXT;
@@ -711,7 +732,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		ArrayList<VarNode> result = new ArrayList<VarNode>();
 		for (VarNode varNode : a) {
 			for (VarNode node2 : b) {
-				if (a.equals(b)) {
+				if (varNode.equals(node2)) {
 					result.add(varNode.clone());
 				}
 			}
@@ -727,7 +748,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		for (VarNode varNode : b) {
 			boolean addFlag = true;
 			for (VarNode compare : a) {
-				if (a.equals(b)) {
+				if (varNode.equals(compare)) {
 					addFlag = false;
 					break;
 				}

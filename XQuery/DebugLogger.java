@@ -1,5 +1,7 @@
 package XQuery;
 
+import java.io.PrintStream;
+
 public class DebugLogger {
 	// setting master control to false will cause all
 	// debug information output disappear
@@ -54,20 +56,19 @@ public class DebugLogger {
 	 * @param debug
 	 * @param error
 	 */
-	public void SetObjectControl(boolean regular, boolean debug,
-			boolean error) {
+	public void SetObjectControl(boolean regular, boolean debug, boolean error) {
 		RegularLog = regular;
 		DebugLog = debug;
 		ErrorLog = error;
 	}
-	
+
 	/**
 	 * 
 	 * @param type
 	 * @return
 	 */
 	public boolean ControlFilter(int type) {
-		if (!MasterErrorLog) {
+		if (!MasterControl) {
 			return false;
 		} else {
 			switch (type) {
@@ -109,8 +110,15 @@ public class DebugLogger {
 	 * 
 	 * @param message
 	 */
-	private void OutputLog(String message) {
-		System.out.println(message);
+	private void OutputLogMessage(String prefix, String indent, String message,
+			PrintStream out) {
+		String[] split = message.split("\n");
+		String output = "";
+		output += (prefix + split[0] + "\n");
+		for (int i = 1; i < split.length; i++) {
+			output += (indent + split[i]+"\n");
+		}
+		out.print(output);
 	}
 
 	/**
@@ -119,8 +127,9 @@ public class DebugLogger {
 	 */
 	public void RegularLog(String message) {
 		if (ControlFilter(REGULAR)) {
-			String output = "#Regular\t@" + LogPrefix + ":" + message;
-			OutputLog(output);
+			String prefix = "#Regular    @" + LogPrefix + ":";
+			String indent = "            |    ";
+			OutputLogMessage(prefix, indent, message, System.out);
 		}
 	}
 
@@ -130,8 +139,9 @@ public class DebugLogger {
 	 */
 	public void DebugLog(String message) {
 		if (ControlFilter(DEBUG)) {
-			String output = "%Debug\t@" + LogPrefix + ":" + message;
-			OutputLog(output);
+			String prefix = "%Debug      @" + LogPrefix + ":";
+			String indent = "            |    ";
+			OutputLogMessage(prefix, indent, message, System.out);
 		}
 	}
 
@@ -141,8 +151,9 @@ public class DebugLogger {
 	 */
 	public void ErrorLog(String message) {
 		if (ControlFilter(ERROR)) {
-			String output = "!Error\t@" + LogPrefix + ":" + message;
-			OutputLog(output);
+			String prefix = "!Error      @" + LogPrefix + ":";
+			String indent = "            |    ";
+			OutputLogMessage(prefix, indent, message, System.err);
 		}
 	}
 
