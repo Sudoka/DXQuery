@@ -3,11 +3,7 @@ package XQuery;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
-import java.util.concurrent.LinkedBlockingDeque;
-
 import org.w3c.dom.Node;
-
-import sun.awt.image.ImageWatched.Link;
 
 public class XContext {
 
@@ -89,7 +85,7 @@ public class XContext {
 			// if the node directly appears in the vk, it should be deleted no
 			// matter how many children it has
 			ArrayList<VarNode> LinkedData = vk.GetLinkData(node);
-			VarNode lastNode = LinkedData.get(LinkedData.size()-1);
+			VarNode lastNode = LinkedData.get(LinkedData.size() - 1);
 			String varName = lastNode.name;
 			// log.ErrorLog("node:" + node.getNodeName() + "\n"
 			// + node.getNodeValue() + "\n" + "VarNode:" + lastNode.name
@@ -98,23 +94,27 @@ public class XContext {
 			assert (lastNode.node == node);
 			if (context.containsKey(varName)) {
 				context.remove(varName);
-				Node parent = node.getParentNode();
-				removeStatusIndicator.put(parent, 1);
-			} else {
-				AddIndicator(node);
+			}
+			for (int i = 0; i < LinkedData.size() - 1; i++) {
+				VarNode removeNode = LinkedData.get(i);
+				AddIndicator(removeNode.node);
 			}
 		}
 
+		ArrayList<String> keySet = new ArrayList<String>();
+		for (String string : context.keySet()) {
+			keySet.add(new String(string));
+		}
 		// traverse and remove nodes
-		for (String varName : context.keySet()) {
+		for (String varName : keySet) {
 			// for each variable binding
-			VariableKeeper VK = context.get(varName);
+			VariableKeeper VK = context.get(varName).clone();
 			for (Node node : VK.GetNodes()) {
 				// for each node binded to a variable
 				Integer indicator = removeStatusIndicator.get(node);
 				if (indicator != null && indicator > 0) {
-					if (indicator >= node.getChildNodes().getLength()) {
-						VK.RemoveNode(node);
+					if (indicator > 0) {
+						context.get(varName).RemoveNode(node);
 						AddIndicator(node.getParentNode());
 					}
 				}
@@ -137,6 +137,18 @@ public class XContext {
 					+ Lookup(varName).GetLinkData(
 							Lookup(varName).GetVarNodeList().get(0).node)
 							.size());
+		}
+	}
+
+	public void Subtract(VariableKeeper VK) {
+		for (VarNode varnode : VK.GetVarNodeList()) {
+			context.get(varnode.name).RemoveNode(varnode.node);
+		}
+	}
+
+	public void Subtract(XContext subContext) {
+		for (String str : subContext.context.keySet()) {
+			this.Subtract(context.get(str));
 		}
 	}
 

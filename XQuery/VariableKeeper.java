@@ -107,10 +107,10 @@ public class VariableKeeper {
 	public void Subtract(VariableKeeper sub) {
 		for (Node node : sub.hashIndex.keySet()) {
 			RemoveNode(node);
-			ArrayList<VarNode> varNodeList = sub.hashIndex.get(node);
-			for (VarNode varNode : varNodeList) {
-				RemoveNode(varNode.node);
-			}
+//			ArrayList<VarNode> varNodeList = sub.hashIndex.get(node);
+//			for (VarNode varNode : varNodeList) {
+//				RemoveNode(varNode.node);
+//			}
 		}
 	}
 
@@ -122,6 +122,14 @@ public class VariableKeeper {
 		return clone2;
 	}
 
+	public VariableKeeper Intersect(VariableKeeper var1, VariableKeeper var2){
+		VariableKeeper clone1 = var1.clone();
+		VariableKeeper clone2 = var1.clone();
+		clone1.Subtract(var2);
+		clone2.Subtract(clone1);
+		return clone2;
+	}
+	
 	// this method may need to optimize for performance
 	public VariableKeeper DisJoint(VariableKeeper var, int operation) {
 		// VariableKeeper result = new VariableKeeper();

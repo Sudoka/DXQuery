@@ -5,6 +5,8 @@ package XQuery;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.xerces.dom.DocumentImpl;
 import org.w3c.dom.Document;
@@ -62,19 +64,19 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 
 		log.DebugLog("Got result size:" + result.size());
 
-		for (Node n : result.GetNodes()) {
-
-			log.DebugLog("Node:" + n.getNodeName());
-			if (n.getNodeType() == Node.TEXT_NODE) {
-				log.DebugLog("text node value:" + n.getNodeValue());
-			}
-			try {
-				System.out.println(DOMPrinter.printXML(n));
-			} catch (IOException e) {
-				log.ErrorLog("Some kind of parse error caused by DOMPrinter");
-				e.printStackTrace();
-			}
-		}
+		// for (Node n : result.GetNodes()) {
+		//
+		// log.DebugLog("Node:" + n.getNodeName());
+		// if (n.getNodeType() == Node.TEXT_NODE) {
+		// log.DebugLog("text node value:" + n.getNodeValue());
+		// }
+		// try {
+		// System.out.println(DOMPrinter.printXML(n));
+		// } catch (IOException e) {
+		// log.ErrorLog("Some kind of parse error caused by DOMPrinter");
+		// e.printStackTrace();
+		// }
+		// }
 		return result;
 	}
 
@@ -516,23 +518,23 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		int firstChildId = firstChild.getId();
 
 		// two return types
-		VariableKeeper removeList = new VariableKeeper();
-		XContext removeContext = new XContext();
+		VariableKeeper keepList = new VariableKeeper();
+		XContext keepContext = new XContext();
 
 		// indicator of what type of result to return
-		int removeFlag = 0;
+		int keepFlag = 0;
 		switch (firstChildId) {
 		case JJTCOND:
 			// (Cond)
-			Object removeOb = firstChild.jjtAccept(this, newContext);
+			Object keepOb = firstChild.jjtAccept(this, newContext);
 			if (childrenNum == 1)
-				return removeOb;
+				return keepOb;
 		case JJTXQ:
 			/**
 			 * XQ == XQ ; XQ = XQ ; XQ is XQ ; XQ eq XQ followed by And or Or
 			 */
 			assert (childrenNum >= 3);
-			((XContext) data).DebugPrintAllBingdings();
+			// ((XContext) data).DebugPrintAllBingdings();
 			VariableKeeper xqResult1 = (VariableKeeper) firstChild.jjtAccept(
 					this, data);
 
@@ -550,15 +552,16 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			case JJTIS:
 				VariableKeeper xqResult2 = (VariableKeeper) thirdChild
 						.jjtAccept(this, data);
-				// xqResult1.PrintAllVars();
-				// System.out.println("-------------------------");
-				// xqResult2.PrintAllVars();
-				int operation = (secondChildId == JJTEQ ? VariableKeeper.EQ_DISJOINT
-						: VariableKeeper.IS_DISJOINT);
-				removeList = xqResult1.DisJoint(xqResult2, operation);
+
+				// int operation = (secondChildId == JJTEQ ?
+				// VariableKeeper.EQ_DISJOINT
+				// : VariableKeeper.IS_DISJOINT);
+				// we may need to decide ID equal to use or Value equal to use
+				// in the Intersect operation
+				keepList = xqResult1.Intersect(xqResult1, xqResult2);
 				// System.out.println("-------------------------");
 				// removeList.PrintAllVars();
-				removeFlag = REMOVE_VARKEEPER;
+				keepFlag = REMOVE_VARKEEPER;
 				break;
 			default:
 				log.ErrorLog("Evaluating Cond, encountered unexpected second child:"
@@ -567,7 +570,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				break;
 			}
 			if (childrenNum == 3) {
-				return removeList;
+				return keepList;
 			}
 			break;
 		case JJTEMPTY:
@@ -580,25 +583,24 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			// the XQ result is empty, so no nodes get filter, return an empty
 			// list
 			if (xqResult == null || xqResult.size() == 0) {
-				removeList = new VariableKeeper();
-				removeFlag = REMOVE_VARKEEPER;
-				if (childrenNum == 2) {
-					return removeList;
-				}
-			} else {
-				// the XQ result is no empty, thus the empty clause does not
+				// the XQ result is empty, thus the empty clause does not
 				// stand, no variables should be kept, return a context for that
-				removeContext = (XContext) data;
-				removeFlag = REMOVE_CONTEXT;
+				keepContext = (XContext) data;
+				keepFlag = REMOVE_CONTEXT;
 				if (childrenNum == 2)
-					return removeContext;
+					return (XContext) data;
+			} else {
+				keepList = new VariableKeeper();
+				keepFlag = REMOVE_VARKEEPER;
+				if (childrenNum == 2) {
+					return keepList;
+				}
 			}
 			break;
 		case JJTSOME:
 			XContext someResult = null;
-			XContext tmpContext = ((XContext) data).clone();
 			boolean canReturn = false;
-			removeFlag = REMOVE_VARKEEPER;
+			keepFlag = REMOVE_VARKEEPER;
 			/**
 			 * production: some var in xq and cond evaluate some with correct
 			 * number of children
@@ -610,6 +612,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				for (int i = 0; i < childrenNum - 2; i++) {
 					tmp.jjtAddChild(node.children[i], i);
 				}
+				// go to EvaluateSome do something
 				someResult = EvaluateSome(tmp, (XContext) data);
 			} else {
 				// means there are nothing more following some clause, we can
@@ -617,40 +620,28 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				canReturn = true;
 				someResult = EvaluateSome(node, (XContext) data);
 			}
-			for (String varName : tmpContext.GetVarNames()) {
-				// only when a full variable binding is filtered by some clause,
-				// we should filter it. else, we will keep the whole variable
-				// binding
-				if (someResult.Lookup(varName) == null
-						|| someResult.Lookup(varName).size() == 0) {
-					removeList = removeList.CreateByMerge(tmpContext
-							.Lookup(varName));
-				}
-			}
+			keepFlag = REMOVE_CONTEXT;
+			keepContext = someResult;
 			if (canReturn)
-				return removeList;
+				return keepContext;
 			break;
 		case JJTNOT:
 			secondChild = (SimpleNode) node.children[1];
 			secondChildId = secondChild.getId();
 			assert (secondChildId == JJTCOND);
-			removeOb = secondChild.jjtAccept(this, newContext);
-			removeFlag = REMOVE_VARKEEPER;
+			keepOb = secondChild.jjtAccept(this, newContext);
+			XContext notContext = newContext.clone();
 			// reverse what we have from cond, if we filtered everything, there,
 			// we return an empty list indicating that nothing should be
 			// filtered
-			if (removeOb instanceof XContext) {
-				removeList = new VariableKeeper();
+			keepFlag = REMOVE_CONTEXT;
+			if (keepOb instanceof XContext) {
+				notContext.Subtract(((XContext) keepOb));
 			} else {
-				VariableKeeper wholeVarKeeper = new VariableKeeper();
-				// condense all the variable binding in a context into a single
-				// VariableKeeper
-				wholeVarKeeper = newContext.Zip();
-				wholeVarKeeper.Subtract((VariableKeeper) removeOb);
-				removeList = wholeVarKeeper;
-				if (childrenNum == 2) {
-					return removeList;
-				}
+				notContext.Subtract(((VariableKeeper) keepOb));
+			}
+			if (childrenNum == 2) {
+				return notContext;
 			}
 			break;
 		default:
@@ -671,19 +662,20 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		assert (operatorId == JJTAND || operatorId == JJTOR);
 		Object removeOb = node.children[childrenNum - 1].jjtAccept(this,
 				newContext);
+		// TODO: Start from here!!!!
 		/**
 		 * here since both of cond must be satisfied, we have to remove both
 		 * cond1 and cond2
 		 */
 		if (operatorId == JJTAND) {
 			// make union and return
-			if (removeFlag == REMOVE_CONTEXT) {
-				return removeContext;
-			} else if (removeFlag == REMOVE_VARKEEPER) {
+			if (keepFlag == REMOVE_CONTEXT) {
+				return keepContext;
+			} else if (keepFlag == REMOVE_VARKEEPER) {
 				if (removeOb instanceof XContext) {
 					return (XContext) removeOb;
 				} else {
-					return removeList.CreateByMerge((VariableKeeper) removeOb);
+					return keepList.CreateByMerge((VariableKeeper) removeOb);
 				}
 			} else {
 				log.ErrorLog("Remove Flag has unexpected value!!!");
@@ -693,13 +685,13 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			 * since it is or opeartor, we only need to remove the intersect of
 			 * result from cond1 and cond2
 			 */
-			if (removeFlag == REMOVE_CONTEXT) {
+			if (keepFlag == REMOVE_CONTEXT) {
 				return removeOb;
 			} else {
 				if (removeOb instanceof XContext) {
-					return removeList;
+					return keepList;
 				} else {
-					return removeList.Intersect((VariableKeeper) removeOb);
+					return keepList.Intersect((VariableKeeper) removeOb);
 				}
 			}
 		}
@@ -734,22 +726,22 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		if (condResult instanceof XContext) {
 			return context;
 		} else {
-			VariableKeeper removeList = (VariableKeeper) condResult;
-			if (removeList != null && removeList.size() > 0
-					&& removeList.GetVarNodeList() != null) {
-				for (VarNode varNode : removeList.GetVarNodeList()) {
+			Set<String> keepVarName = new HashSet<String>();
+			VariableKeeper keepList = (VariableKeeper) condResult;
+			if (keepList != null && keepList.size() > 0
+					&& keepList.GetVarNodeList() != null) {
+				for (VarNode varNode : keepList.GetVarNodeList()) {
 					try {
-						result.Lookup(varNode.name).RemoveNode(varNode.node);
+						keepVarName.add(varNode.name);
 					} catch (NullPointerException e) {
-
+						log.ErrorLog("about line 745");
 					}
 				}
 			}
 			XContext finalResult = context.clone();
 			for (String varName : result.GetVarNames()) {
-				if (result.Lookup(varName) == null
-						|| result.Lookup(varName).size() == 0) {
-					finalResult.Remove(varName);
+				if (!keepVarName.contains(varName)) {
+					keepVarName.remove(varName);
 				}
 			}
 			return finalResult;
