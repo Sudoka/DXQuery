@@ -489,14 +489,16 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		XContext newContext = ((XContext) data).clone();
 		// TODO: add more code here to remove the unsatisfied nodes,
 		// need more work to implement the correct behavior
-		Object toBeRemoved = node.children[0].jjtAccept(this, newContext);
-		if (toBeRemoved instanceof XContext) {
-			return new XContext();
+		Object toBeKeeped = node.children[0].jjtAccept(this, newContext);
+		if (toBeKeeped instanceof XContext) {
+			return (XContext)toBeKeeped;
 		} else {
-			VariableKeeper removeList = (VariableKeeper) toBeRemoved;
-			log.DebugLog("In Where, to be removed:" + removeList.size());
-			removeList.PrintAllVars();
-			newContext.RecursiveRemoveVariableKeeper(removeList);
+			VariableKeeper keepList = (VariableKeeper) toBeKeeped;
+			log.DebugLog("In Where, to be keeped:" + keepList.size());
+			keepList.PrintAllVars();
+			XContext testContext = newContext.clone();
+			testContext.Subtract(keepList);
+			newContext.Subtract(testContext);
 			return newContext;
 		}
 	}
@@ -660,7 +662,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		SimpleNode operatorNode = (SimpleNode) node.children[childrenNum - 2];
 		int operatorId = operatorNode.getId();
 		assert (operatorId == JJTAND || operatorId == JJTOR);
-		Object removeOb = node.children[childrenNum - 1].jjtAccept(this,
+		Object keepOb = node.children[childrenNum - 1].jjtAccept(this,
 				newContext);
 		// TODO: Start from here!!!!
 		/**
@@ -668,31 +670,49 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		 * cond1 and cond2
 		 */
 		if (operatorId == JJTAND) {
-			// make union and return
+			// make intersect and return
 			if (keepFlag == REMOVE_CONTEXT) {
-				return keepContext;
-			} else if (keepFlag == REMOVE_VARKEEPER) {
-				if (removeOb instanceof XContext) {
-					return (XContext) removeOb;
+				if (keepOb instanceof XContext) {
+					keepContext.Intersect((XContext) keepOb);
+					return keepContext;
 				} else {
-					return keepList.CreateByMerge((VariableKeeper) removeOb);
+					keepContext.Intersect((VariableKeeper) keepOb);
+					return keepContext;
+				}
+			} else if (keepFlag == REMOVE_VARKEEPER) {
+				if (keepOb instanceof XContext) {
+					XContext keepCon = (XContext) keepOb;
+					keepCon.Intersect(keepList);
+					return keepCon;
+				} else {
+					VariableKeeper keepVK = (VariableKeeper) keepOb;
+					return keepList.Intersect(keepVK);
 				}
 			} else {
 				log.ErrorLog("Remove Flag has unexpected value!!!");
 			}
 		} else {
-			/**
-			 * since it is or opeartor, we only need to remove the intersect of
-			 * result from cond1 and cond2
-			 */
 			if (keepFlag == REMOVE_CONTEXT) {
-				return removeOb;
-			} else {
-				if (removeOb instanceof XContext) {
-					return keepList;
+				if (keepOb instanceof XContext) {
+					keepContext.Union((XContext) keepOb);
+					return keepContext;
 				} else {
-					return keepList.Intersect((VariableKeeper) removeOb);
+					keepContext.Union((VariableKeeper) keepOb);
+					return keepContext;
 				}
+			} else if (keepFlag == REMOVE_VARKEEPER) {
+				if (keepOb instanceof XContext) {
+					XContext keepCon = (XContext) keepOb;
+					keepCon.Union(keepList);
+					return keepCon;
+				} else {
+					XContext keepCon = keepList.ConverToContext();
+					VariableKeeper keepVK = (VariableKeeper) keepOb;
+					keepCon.Union(keepVK);
+					return keepCon;
+				}
+			} else {
+				log.ErrorLog("Remove Flag has unexpected value!!!");
 			}
 		}
 
@@ -724,7 +744,14 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		Object condResult = lastNode.jjtAccept(this, result);
 
 		if (condResult instanceof XContext) {
-			return context;
+			XContext condContext = (XContext)condResult;
+			XContext originalContext = result.clone();
+			for (String varName : result.GetVarNames()) {
+				if(!condContext.GetVarNames().contains(varName)){
+					originalContext.Remove(varName);
+				}
+			}
+			return originalContext;
 		} else {
 			Set<String> keepVarName = new HashSet<String>();
 			VariableKeeper keepList = (VariableKeeper) condResult;

@@ -152,4 +152,67 @@ public class XContext {
 		}
 	}
 
+	public void Union(XContext con) {
+		for (String varName : con.context.keySet()) {
+			VariableKeeper thisVK = context.get(varName);
+			if (context.containsKey(varName)) {
+				for (VarNode varNode : thisVK.GetVarNodeList()) {
+					context.get(varName).AddNodeWithLink(varNode.node,
+							thisVK.GetLinkData(varNode.node));
+				}
+			} else {
+				context.put(varName, con.context.get(varName));
+			}
+		}
+	}
+
+	public void Union(VariableKeeper vk) {
+		for (VarNode varnode : vk.GetVarNodeList()) {
+			if (context.containsKey(varnode.name)) {
+				context.get(varnode.name).AddNodeWithLink(varnode.node,
+						vk.GetLinkData(varnode.node));
+			} else {
+				VariableKeeper newVK = new VariableKeeper();
+				newVK.AddNodeWithLink(varnode.node,
+						vk.GetLinkData(varnode.node));
+				Extend(varnode.name, newVK);
+			}
+		}
+	}
+
+	public void Intersect(XContext con) {
+		ArrayList<String> varNameList = new ArrayList<String>();
+		for (String string : context.keySet()) {
+			varNameList.add(new String(string));
+		}
+		ArrayList<String> remove = new ArrayList<String>();
+		for (String string : varNameList) {
+			if (!con.context.containsKey(string)) {
+				context.remove(string);
+				remove.add(string);
+			}
+		}
+		varNameList.removeAll(remove);
+		for (String string : varNameList) {
+			context.get(string).Subtract(con.context.get(string));
+		}
+	}
+
+	public void Intersect(VariableKeeper vk) {
+		XContext subResult = clone();
+		XContext toSub = vk.ConverToContext();
+		subResult.Subtract(toSub);
+		this.Subtract(subResult);
+	}
+
+	// attentsion, linkdata must already contains information of node
+	public void PutNodeWithLinkData(VarNode node, ArrayList<VarNode> linkData) {
+		if (context.containsKey(node.name)) {
+			context.get(node.name).AddNodeWithLink(node.node, linkData);
+		} else {
+			VariableKeeper newVK = new VariableKeeper();
+			newVK.AddNodeWithLink(node.node, linkData);
+			Extend(node.name, newVK);
+		}
+	}
 }

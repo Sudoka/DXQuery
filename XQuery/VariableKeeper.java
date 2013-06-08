@@ -88,7 +88,8 @@ public class VariableKeeper {
 
 	public void AddNodeWithLink(Node n, ArrayList<VarNode> linkData) {
 		linkedData.add(linkData);
-		hashIndex.put(n, linkData);
+		// hashIndex.put(n, linkData);
+		hashIndex.put(n, linkedData.get(linkedData.indexOf(linkData)));
 	}
 
 	public Set<Node> GetNodes() {
@@ -100,17 +101,28 @@ public class VariableKeeper {
 	}
 
 	public void RemoveNode(Node node) {
-		linkedData.remove(hashIndex.get(node));
-		hashIndex.remove(node);
+		ArrayList<Node> tmpNodes = new ArrayList<Node>();
+		for (Node node2 : GetNodes()) {
+			if (NodeProcessor.CheckEQ(node, node2)) {
+				tmpNodes.add(node2);
+			}
+		}
+		for (Node node2 : tmpNodes) {
+			ArrayList<VarNode> removeLinkList = hashIndex.get(node2);
+			int i = linkedData.indexOf(removeLinkList);
+			linkedData.remove(removeLinkList);
+			hashIndex.remove(node2);
+		}
+
 	}
 
 	public void Subtract(VariableKeeper sub) {
 		for (Node node : sub.hashIndex.keySet()) {
 			RemoveNode(node);
-//			ArrayList<VarNode> varNodeList = sub.hashIndex.get(node);
-//			for (VarNode varNode : varNodeList) {
-//				RemoveNode(varNode.node);
-//			}
+			// ArrayList<VarNode> varNodeList = sub.hashIndex.get(node);
+			// for (VarNode varNode : varNodeList) {
+			// RemoveNode(varNode.node);
+			// }
 		}
 	}
 
@@ -122,14 +134,14 @@ public class VariableKeeper {
 		return clone2;
 	}
 
-	public VariableKeeper Intersect(VariableKeeper var1, VariableKeeper var2){
+	public VariableKeeper Intersect(VariableKeeper var1, VariableKeeper var2) {
 		VariableKeeper clone1 = var1.clone();
 		VariableKeeper clone2 = var1.clone();
 		clone1.Subtract(var2);
 		clone2.Subtract(clone1);
 		return clone2;
 	}
-	
+
 	// this method may need to optimize for performance
 	public VariableKeeper DisJoint(VariableKeeper var, int operation) {
 		// VariableKeeper result = new VariableKeeper();
@@ -178,7 +190,7 @@ public class VariableKeeper {
 
 	public ArrayList<VarNode> GetVarNodeList() {
 		if (this.Name == null || this.Name == "") {
-			return null;
+			return new ArrayList<VarNode>();
 		}
 		ArrayList<VarNode> result = new ArrayList<VarNode>();
 		for (ArrayList<VarNode> varList : linkedData) {
@@ -311,6 +323,14 @@ public class VariableKeeper {
 	 */
 	public void FilterTuple(String variable, ArrayList<Node> filter) {
 
+	}
+
+	public XContext ConverToContext() {
+		XContext context = new XContext();
+		for (VarNode varnode : GetVarNodeList()) {
+			context.PutNodeWithLinkData(varnode, GetLinkData(varnode.node));
+		}
+		return context;
 	}
 
 }

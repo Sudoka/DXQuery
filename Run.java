@@ -84,7 +84,7 @@ public class Run implements XQueryParserTreeConstants {
 				+ "$tb in $b/title,\n $tt in $t//title\n"
 				+ "where not($tb/text() = $tt/text())\n" + "return $tb";
 		// DebugLogger.MasterRegularLog= false;
-		new Run().runQuery(testbib);
+		new Run().runQuery(testCond1);
 	}
 
 	void runQuery(String queryStr)
