@@ -3,7 +3,11 @@ package XQuery;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.concurrent.LinkedBlockingDeque;
+
 import org.w3c.dom.Node;
+
+import sun.awt.image.ImageWatched.Link;
 
 public class XContext {
 
@@ -11,8 +15,11 @@ public class XContext {
 
 	private HashMap<String, VariableKeeper> context = null;
 
+	private HashMap<Node, Integer> removeStatusIndicator = null;
+
 	public XContext() {
 		context = new HashMap<String, VariableKeeper>();
+		removeStatusIndicator = new HashMap<Node, Integer>();
 	}
 
 	public XContext clone() {
@@ -21,6 +28,11 @@ public class XContext {
 		for (String varName : this.context.keySet()) {
 			String newName = new String(varName);
 			newContext.context.put(newName, this.context.get(varName).clone());
+		}
+		newContext.removeStatusIndicator = new HashMap<Node, Integer>();
+		for (Node node : this.removeStatusIndicator.keySet()) {
+			Integer newInteger = new Integer(removeStatusIndicator.get(node));
+			newContext.removeStatusIndicator.put(node, newInteger);
 		}
 		return newContext;
 	}
@@ -60,37 +72,54 @@ public class XContext {
 		return context.keySet();
 	}
 
-	public void RemoveVarNodeAndLinkData(VarNode node) {
-		RecursiveRemove(node);
+	private void AddIndicator(Node node) {
+		// increase the indicator by 1
+		if (!removeStatusIndicator.containsKey(node)) {
+			removeStatusIndicator.put(node, 1);
+		} else {
+			Integer indicator = removeStatusIndicator.get(node);
+			removeStatusIndicator.put(node, ++indicator);
+		}
 	}
 
 	public void RecursiveRemoveVariableKeeper(VariableKeeper vk) {
-		for (ArrayList<VarNode> nodeList : vk.GetWholeLinkData()) {
-			for (VarNode varNode : nodeList) {
-				RecursiveRemove(varNode);
-			}
-		}
-	}
 
-	private void RecursiveRemove(VarNode node) {
-		if (node.name == null || context.get(node.name) == null) {
-			//log.DebugLog("Damn no node name!!");
-			return;
-		} else {
-			ArrayList<VarNode> linkNodes = context.get(node.name).GetLinkData(
-					node.node);
-			if (linkNodes != null) {
-				ArrayList<VarNode> cloneList = new ArrayList<VarNode>();
-				for (VarNode varNode : linkNodes) {
-					cloneList.add(varNode.clone());
-				}
-				context.get(node.name).RemoveNode(node.node);
-				for (VarNode varNode : cloneList) {
-					RecursiveRemove(varNode);
-				}
+		// traverse vk and establish removeStatus hashmap
+		for (Node node : vk.GetNodes()) {
+			// if the node directly appears in the vk, it should be deleted no
+			// matter how many children it has
+			ArrayList<VarNode> LinkedData = vk.GetLinkData(node);
+			VarNode lastNode = LinkedData.get(LinkedData.size()-1);
+			String varName = lastNode.name;
+			// log.ErrorLog("node:" + node.getNodeName() + "\n"
+			// + node.getNodeValue() + "\n" + "VarNode:" + lastNode.name
+			// + " " + lastNode.node.getNodeName() + "\n"
+			// + lastNode.node.getNodeValue());
+			assert (lastNode.node == node);
+			if (context.containsKey(varName)) {
+				context.remove(varName);
+				Node parent = node.getParentNode();
+				removeStatusIndicator.put(parent, 1);
+			} else {
+				AddIndicator(node);
 			}
 		}
 
+		// traverse and remove nodes
+		for (String varName : context.keySet()) {
+			// for each variable binding
+			VariableKeeper VK = context.get(varName);
+			for (Node node : VK.GetNodes()) {
+				// for each node binded to a variable
+				Integer indicator = removeStatusIndicator.get(node);
+				if (indicator != null && indicator > 0) {
+					if (indicator >= node.getChildNodes().getLength()) {
+						VK.RemoveNode(node);
+						AddIndicator(node.getParentNode());
+					}
+				}
+			}
+		}
 	}
 
 	public void DebugPrintAllBingdings() {

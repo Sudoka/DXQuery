@@ -4,6 +4,8 @@ import java.io.StringReader;
 import java.lang.Integer;
 import java.util.ArrayList;
 
+import sun.util.logging.resources.logging;
+
 class test {
 	String str;
 	ArrayList<ArrayList<String>> strMatrix;
@@ -25,19 +27,15 @@ public class Run implements XQueryParserTreeConstants {
 				+ "       <when>{<act>{$a/TITLE/text()}</act>,\n"
 				+ "             <scene>{$sc/TITLE/text()}</scene>}\n"
 				+ "       </when>\n" + "}</result>\n";
-		String testbib = "<result>{\n"
-				+"for $a in doc(\"bib.xml\")//book,\n"
-				+"    $sc in $a//author,\n"
-				+"    $sp in $sc/last,\n"
-				+"    $x in doc(\"bib.xml\")//reviews\n"
-				+"where $sp/text() = \"Lorant\"\n"
-				+"return <title>{$a//title/text()}</title>,\n"
-				+"        <YearPrice>{\n"
-				+"            <first>{$sc//first/text()}</first>,\n"
-				+"            <price>{$x//price/text()}</price>\n"
-				+"        }</YearPrice>\n"
-				+"}</result>\n";
-
+		String testbib = "<result>{\n" + "for $a in doc(\"bib.xml\")//book,\n"
+				+ "    $sc in $a//author,\n" + "    $sp in $sc/last,\n"
+				+ "    $x in doc(\"bib.xml\")//reviews\n"
+				+ "where $sp/text() = \"Lorant\"\n"
+				+ "return <title>{$a//title/text()}</title>,\n"
+				+ "        <YearPrice>{\n"
+				+ "            <first>{$sc//first/text()}</first>,\n"
+				+ "            <price>{$x//price/text()}</price>\n"
+				+ "        }</YearPrice>\n" + "}</result>\n";
 
 		String test2 = "for $s in document(\"j_caesar.xml\")//SPEAKER \n"
 				+ "return <speaks>{<who>{$s/text()}</who>, \n"
@@ -74,7 +72,8 @@ public class Run implements XQueryParserTreeConstants {
 
 		String testCond1 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
 				+ "$tb in $b/title,\n $tt in $t//title\n"
-				+ "where $tb/text() = $tt/text()\n" + "return $b,$t";
+				+ "where $tb/text() = $tt/text()\n"
+				+ "return $b/price";
 		String testCond2 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
 				+ "$tb in $b/title,\n $tt in $t//title\n"
 				+ "where some $tx in $tb/text(), $ty in $tt/text() satisfies $tx=$ty\n"
@@ -82,8 +81,8 @@ public class Run implements XQueryParserTreeConstants {
 		String testCond3 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
 				+ "$tb in $b/title,\n $tt in $t//title\n"
 				+ "where not($tb/text() = $tt/text())\n" + "return $tb";
-//		DebugLogger.MasterRegularLog= false;
-		new Run().runQuery(testbib);
+		// DebugLogger.MasterRegularLog= false;
+		new Run().runQuery(testCond1);
 	}
 
 	void runQuery(String queryStr)
@@ -103,7 +102,8 @@ public class Run implements XQueryParserTreeConstants {
 
 			XQProcessVisitor visitor = new XQProcessVisitor();
 			VariableKeeper res = (VariableKeeper) root.jjtAccept(visitor, null);
-			// res.PrintAllVars();
+			System.out.println("=============final result=============");
+			res.PrintAllVars();
 
 			// here's where we actually walk the tree we've so painfully
 			// constructed and derive an answer to our query

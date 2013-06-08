@@ -19,6 +19,7 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 	 * visitor method in XQProcessVisitor is that my implementation needs more
 	 * parameters provided by XQProcessVisitor visit method.
 	 */
+	@SuppressWarnings("unchecked")
 	public ArrayList<Object> ProcessRP(AST_RP thisNode, Node domParent,
 			int domOperation) {
 		log.RegularLog("DomParent Node name:" + domParent.getNodeName());
@@ -80,7 +81,7 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 			} else {
 				// if the node is not a text, node, the result
 				// will be null, so do nothing and return it
-				log.RegularLog("inside switch(" + childrenNum + ")"
+				log.ErrorLog("inside switch(" + childrenNum + ")"
 						+ "switch(JJTTXT)");
 			}
 			break;
