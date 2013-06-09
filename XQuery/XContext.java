@@ -141,14 +141,19 @@ public class XContext {
 	}
 
 	public void Subtract(VariableKeeper VK) {
-		for (VarNode varnode : VK.GetVarNodeList()) {
-			context.get(varnode.name).RemoveNode(varnode.node);
+		for (ArrayList<VarNode> varNodeList : VK.GetWholeLinkData()) {
+			for (VarNode varnode : varNodeList) {
+				if (varnode.name != null && context.containsKey(varnode.name))
+					context.get(varnode.name).RemoveNode(varnode.node);
+			}
 		}
 	}
 
 	public void Subtract(XContext subContext) {
 		for (String str : subContext.context.keySet()) {
-			this.Subtract(context.get(str));
+			VariableKeeper vk1 = context.get(str);
+			VariableKeeper vk2 = subContext.context.get(str);
+			vk1.Subtract(vk2);
 		}
 	}
 

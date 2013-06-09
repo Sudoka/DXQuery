@@ -33,17 +33,17 @@ public class Run implements XQueryParserTreeConstants {
 				+ "    $sp in $sc/last,\n"
 				+ "    $x in doc(\"bib.xml\")//reviews\n"
 				+ "where $sp/text() = \"Lorant\"\n"
-				+ "return <title>{$a//title/text()}</title>,\n"
+				+ "return <title>{$a//title}</title>,\n"
 				+ "        <YearPrice>{\n"
-				+ "            <first>{$sc//first/text()}</first>,\n"
-				+ "            <price>{$a//price/text()}</price>\n"
+				+ "            <first>{$sc//first}</first>,\n"
+				+ "            <price>{$a//price}</price>\n"
 				+ "        }</YearPrice>\n" + "}</result>\n";
 
 		String test2 = "for $s in document(\"j_caesar.xml\")//SPEAKER \n"
-				+ "return <speaks>{<who>{$s/text()}</who>, \n"
+				+ "return <speaks>{(<who>{$s/text()}</who>), \n"
 				+ "                for $a in document(\"j_caesar.xml\")//ACT\n"
 				+ "                where some $s1 in $a//SPEAKER satisfies $s1 eq $s\n"
-				+ "                return <when>{$a/title/text()}</when>}\n"
+				+ "                return <when>{$a/TITLE/text()}</when>}\n"
 				+ "</speaks>\n";
 
 		String test3 = "for $A in document(\"bib.xml\")/AS\n"
@@ -75,7 +75,7 @@ public class Run implements XQueryParserTreeConstants {
 		String testCond1 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
 				+ "$tb in $b/title,\n $tt in $t//title\n"
 				+ "where $tb/text() = $tt/text()\n"
-				+ "return ($b/price),$t//price";
+				+ "return <t>{($t//price),$t//title}</t>";
 		String testCond2 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
 				+ "$tb in $b/title,\n $tt in $t//title\n"
 				+ "where some $tx in $tb/text(), $ty in $tt/text() satisfies $tx=$ty\n"
@@ -84,7 +84,7 @@ public class Run implements XQueryParserTreeConstants {
 				+ "$tb in $b/title,\n $tt in $t//title\n"
 				+ "where not($tb/text() = $tt/text())\n" + "return $tb";
 		// DebugLogger.MasterRegularLog= false;
-		new Run().runQuery(testCond1);
+		new Run().runQuery(test2);
 	}
 
 	void runQuery(String queryStr)

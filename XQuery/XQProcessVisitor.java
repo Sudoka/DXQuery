@@ -173,7 +173,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		// To be returned
 		VariableKeeper result = new VariableKeeper();
 		// used as parameter for future AST nodes
-		XContext firstContext = null;
+		XContext firstContext = ((XContext)data).clone();
 
 		int childrenNum = node.jjtGetNumChildren();
 		assert (childrenNum > 0);

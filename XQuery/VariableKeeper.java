@@ -15,7 +15,7 @@ public class VariableKeeper {
 	private HashMap<Node, ArrayList<VarNode>> hashIndex = null;
 
 	// link
-	private ArrayList<ArrayList<VarNode>> linkedData = null;
+	// private ArrayList<ArrayList<VarNode>> linkedData = null;
 
 	private String Name = null;
 
@@ -23,12 +23,12 @@ public class VariableKeeper {
 
 	public VariableKeeper() {
 		hashIndex = new HashMap<Node, ArrayList<VarNode>>();
-		linkedData = new ArrayList<ArrayList<VarNode>>();
+		// linkedData = new ArrayList<ArrayList<VarNode>>();
 	}
 
 	public VariableKeeper(ArrayList<Object> nodeList) {
 		hashIndex = new HashMap<Node, ArrayList<VarNode>>();
-		linkedData = new ArrayList<ArrayList<VarNode>>();
+		// linkedData = new ArrayList<ArrayList<VarNode>>();
 		InitializeWithNodeList(nodeList);
 	}
 
@@ -38,8 +38,8 @@ public class VariableKeeper {
 		VariableKeeper varDummy = var.clone();
 		result.hashIndex.putAll(thisDummy.hashIndex);
 		result.hashIndex.putAll(varDummy.hashIndex);
-		result.linkedData.addAll(thisDummy.linkedData);
-		result.linkedData.addAll(varDummy.linkedData);
+		// result.linkedData.addAll(thisDummy.linkedData);
+		// result.linkedData.addAll(varDummy.linkedData);
 		return result;
 	}
 
@@ -62,14 +62,14 @@ public class VariableKeeper {
 		else
 			newVar.Name = new String(this.Name);
 		// clone linked data
-		newVar.linkedData = new ArrayList<ArrayList<VarNode>>();
-		for (ArrayList<VarNode> varlist : this.linkedData) {
-			ArrayList<VarNode> tmpList = new ArrayList<VarNode>();
-			for (VarNode varNode : varlist) {
-				tmpList.add(varNode.clone());
-			}
-			newVar.linkedData.add(tmpList);
-		}
+		// newVar.linkedData = new ArrayList<ArrayList<VarNode>>();
+		// for (ArrayList<VarNode> varlist : this.linkedData) {
+		// ArrayList<VarNode> tmpList = new ArrayList<VarNode>();
+		// for (VarNode varNode : varlist) {
+		// tmpList.add(varNode.clone());
+		// }
+		// newVar.linkedData.add(tmpList);
+		// }
 		// clone hashIndex
 		newVar.hashIndex = new HashMap<Node, ArrayList<VarNode>>();
 		for (Node node : hashIndex.keySet()) {
@@ -87,9 +87,9 @@ public class VariableKeeper {
 	}
 
 	public void AddNodeWithLink(Node n, ArrayList<VarNode> linkData) {
-		linkedData.add(linkData);
-		// hashIndex.put(n, linkData);
-		hashIndex.put(n, linkedData.get(linkedData.indexOf(linkData)));
+		// linkedData.add(linkData);
+		hashIndex.put(n, linkData);
+		// hashIndex.put(n, linkedData.get(linkedData.indexOf(linkData)));
 	}
 
 	public Set<Node> GetNodes() {
@@ -108,9 +108,9 @@ public class VariableKeeper {
 			}
 		}
 		for (Node node2 : tmpNodes) {
-			ArrayList<VarNode> removeLinkList = hashIndex.get(node2);
-			int i = linkedData.indexOf(removeLinkList);
-			linkedData.remove(removeLinkList);
+			// ArrayList<VarNode> removeLinkList = hashIndex.get(node2);
+			// int i = linkedData.indexOf(removeLinkList);
+			// linkedData.remove(removeLinkList);
 			hashIndex.remove(node2);
 		}
 
@@ -135,11 +135,31 @@ public class VariableKeeper {
 	}
 
 	public VariableKeeper Intersect(VariableKeeper var1, VariableKeeper var2) {
-		VariableKeeper clone1 = var1.clone();
-		VariableKeeper clone2 = var1.clone();
-		clone1.Subtract(var2);
-		clone2.Subtract(clone1);
-		return clone2;
+		VariableKeeper result = new VariableKeeper();
+		for (Node node1 : var1.GetNodes()) {
+			for (Node node2 : var2.GetNodes()) {
+				if (NodeProcessor.CheckEQ(node1, node2)) {
+					result.AddNodeWithLink(node1, var1.GetLinkData(node1));
+					ArrayList<VarNode> varNodeList1 = var1.GetLinkData(node1);
+					ArrayList<VarNode> varNodeList2 = var2.GetLinkData(node2);
+					if (varNodeList1 != null && varNodeList2 != null) {
+						int size1 = varNodeList1.size();
+						int size2 = varNodeList2.size();
+						int bound = (size1 < size2 ? size1 : size2);
+						for (int i = 2; i < bound; i++) {
+							Node node1Parent = varNodeList1.get(size1 - i).node;
+							Node node2Parent = varNodeList2.get(size2 - i).node;
+							if (!node1Parent.isSameNode(node2Parent) ) {
+								result.AddNodeWithLink(node2,
+										var2.GetLinkData(node2));
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return result;
 	}
 
 	// this method may need to optimize for performance
@@ -185,17 +205,22 @@ public class VariableKeeper {
 	}
 
 	public ArrayList<ArrayList<VarNode>> GetWholeLinkData() {
+		ArrayList<ArrayList<VarNode>> linkedData = new ArrayList<ArrayList<VarNode>>();
+		for (ArrayList<VarNode> varNodeList : hashIndex.values()) {
+			linkedData.add(varNodeList);
+		}
 		return linkedData;
 	}
 
 	public ArrayList<VarNode> GetVarNodeList() {
-		if (this.Name == null || this.Name == "") {
-			return new ArrayList<VarNode>();
-		}
+		// if (this.Name == null || this.Name == "") {
+		// return new ArrayList<VarNode>();
+		// }
 		ArrayList<VarNode> result = new ArrayList<VarNode>();
-		for (ArrayList<VarNode> varList : linkedData) {
-			assert (varList.get(varList.size() - 1).name.equals(this.Name));
-			result.add(varList.get(varList.size() - 1));
+		for (ArrayList<VarNode> varList : hashIndex.values()) {
+			// assert (varList.get(varList.size() - 1).name.equals(this.Name));
+			if (varList.size() > 0)
+				result.add(varList.get(varList.size() - 1));
 		}
 		return result;
 	}
@@ -212,8 +237,7 @@ public class VariableKeeper {
 	 * @return
 	 */
 	public boolean InitializeWithNodeList(ArrayList<Object> list) {
-		if (linkedData != null && linkedData.size() > 0
-				&& linkedData.get(0).size() > 0) {
+		if (hashIndex.size() > 0) {
 			log.ErrorLog("SimpleAddNodeList should only be used on empty VK!\n "
 					+ "This VK already has link data!");
 			return false;
@@ -223,7 +247,7 @@ public class VariableKeeper {
 				ArrayList<VarNode> tmpList = new ArrayList<VarNode>();
 				VarNode tmpNode = new VarNode("", (Node) n);
 				tmpList.add(tmpNode);
-				linkedData.add(tmpList);
+				// linkedData.add(tmpList);
 				hashIndex.put((Node) n, tmpList);
 			} else {
 				log.ErrorLog(" in SimpleAddNodeList, encountered none node type in list! ");
@@ -234,7 +258,7 @@ public class VariableKeeper {
 	}
 
 	public boolean HasLink() {
-		if (linkedData == null || linkedData.size() == 0) {
+		if (hashIndex.values().size() <= 0) {
 			return false;
 		}
 		return true;
@@ -251,7 +275,7 @@ public class VariableKeeper {
 			this.Name = new String(name);
 		else
 			this.Name = null;
-		for (ArrayList<VarNode> vn : linkedData) {
+		for (ArrayList<VarNode> vn : hashIndex.values()) {
 			if (name != null)
 				vn.get(vn.size() - 1).name = new String(name);
 			else {

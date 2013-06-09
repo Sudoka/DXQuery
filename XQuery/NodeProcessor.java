@@ -79,7 +79,7 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 				result = new ArrayList<Object>();
 				result.add(domParent.getFirstChild());
 			} else {
-				// if the node is not a text, node, the result
+				// if the node is not a text node, the result
 				// will be null, so do nothing and return it
 				log.ErrorLog("inside switch(" + childrenNum + ")"
 						+ "switch(JJTTXT)");
