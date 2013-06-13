@@ -2,6 +2,7 @@ package XQuery;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -543,6 +544,93 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 		return false;
 	}
 
+	// process and group the xq on both side of the comma
+	public static VariableKeeperExtended ProcessComma(
+			XQueryParserVisitor visitor, VariableKeeper left, AST_XQ right,
+			XContext context) {
+
+		VariableKeeperExtended result = new VariableKeeperExtended();
+
+		if (left instanceof VariableKeeperExtended) {
+			// if the left side is already a extend vk, we clone it and add new
+			// group members to the groups in its group list
+			VariableKeeperExtended leftClone = ((VariableKeeperExtended) left)
+					.clone();
+			// we traverse the grouplist of the left extended vk
+			for (ArrayList<Node> nlist : leftClone.groupList) {
+				// for each group, we find out all the variables they bind to
+				// return them in a set
+				Set<VarNode> linkDataSet = leftClone
+						.RecursiveFindLinkedData(nlist);
+				// a new context used to evaluate the XQ on the right of comma
+				XContext tmpContext = context.clone();
+				// clean the old context
+				for (VarNode varNode : linkDataSet) {
+					if (tmpContext.context.containsKey(varNode.name)) {
+						tmpContext.context.put(varNode.name,
+								new VariableKeeper());
+					}
+				}
+				// incrementally build new context
+				for (VarNode varNode : linkDataSet) {
+					if (tmpContext.context.containsKey(varNode.name)) {
+						// get the original link data of varNode.node
+						ArrayList<VarNode> originalLinkData = tmpContext.context
+								.get(varNode.name).GetLinkData(varNode.node);
+						// add actual node bindings into the new context
+						tmpContext.context.get(varNode.name).AddNodeWithLink(
+								varNode.node, originalLinkData);
+					}
+				}
+				// evaluate the right XQ under the new context
+				VariableKeeper rightVk = (VariableKeeper) right.jjtAccept(
+						visitor, tmpContext);
+				// include all the nodes from rightVK first
+				leftClone.MergeVK(rightVk);
+				/**
+				 * extend the group list, different situations when rightVK is
+				 * normal vk or extended vk are handled here
+				 */
+				if (rightVk instanceof VariableKeeperExtended) {
+					// add all the group members to extend the group
+					for (ArrayList<Node> addNlist : ((VariableKeeperExtended) rightVk).groupList) {
+						nlist.addAll(addNlist);
+					}
+				} else {
+					// directly add all the nodes of rightVK into the group
+					nlist.addAll(rightVk.GetNodes());
+				}
+			}
+			// the leftClone will be the result we should return
+			result = leftClone;
+		} else {
+			for (Node n : left.hashIndex.keySet()) {
+				ArrayList<VarNode> ld = left.GetLinkData(n);
+				XContext tmpContext = context.clone();
+				for (VarNode varNode : ld) {
+					if (tmpContext.context.containsKey(varNode.name)) {
+						// get the original link data of varNode.node
+						ArrayList<VarNode> originalLinkData = tmpContext.context
+								.get(varNode.name).GetLinkData(varNode.node);
+						tmpContext.context.put(varNode.name,
+								new VariableKeeper(varNode.node,
+										originalLinkData));
+					}
+				}
+				// evaluate the right XQ under the new context
+				VariableKeeper rightVk = (VariableKeeper) right.jjtAccept(
+						visitor, tmpContext);
+				/**
+				 * different situations when rightVK is normal vk or extended vk
+				 * are handled inside CreateMergeAdd method
+				 */
+				result.CreateMergeAdd(n, rightVk);
+			}
+
+		}
+		return result;
+	}
+
 	public static boolean CheckEQ(Node a, Node b) {
 		if (a == null || b == null) {
 			// Warning: here we treat two nulls as equal
@@ -551,6 +639,18 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 			else
 				return false;
 		}
+//		if(a.getNodeType() == Node.TEXT_NODE || b.getNodeType() == Node.TEXT_NODE){
+//			if(a.getNodeType() == Node.TEXT_NODE || b.getNodeType() == Node.TEXT_NODE){
+//				return a.getNodeValue().equals(b.getNodeValue());
+//			}
+//			else{
+//				Node textNode = a.getNodeType() == Node.TEXT_NODE ? a:b;
+//				Node noneTextNode = a.getNodeType() == Node.TEXT_NODE ? b:a;
+//				if(noneTextNode.getChildNodes().getLength() == 1){
+//					
+//				}
+//			}
+//		}		
 		if (!a.getNodeName().equals(b.getNodeName())
 				|| a.getChildNodes().getLength() != b.getChildNodes()
 						.getLength() || a.getNodeType() != b.getNodeType()) {

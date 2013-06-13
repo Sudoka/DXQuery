@@ -4,8 +4,6 @@ import java.io.StringReader;
 import java.lang.Integer;
 import java.util.ArrayList;
 
-import sun.util.logging.resources.logging;
-
 class test {
 	String str;
 	ArrayList<ArrayList<String>> strMatrix;
@@ -27,26 +25,25 @@ public class Run implements XQueryParserTreeConstants {
 				+ "       <when>{<act>{$a/TITLE/text()}</act>,\n"
 				+ "             <scene>{$sc/TITLE/text()}</scene>}\n"
 				+ "       </when>\n" + "}</result>\n";
-		String testbib = "<result>{\n" + "for $a in doc(\"bib.xml\")//book,\n"
-				+ "    $sc in $a//author,\n" + "    $sp in $sc/last,\n"
-				+ "    $x in doc(\"bib.xml\")//reviews\n"
-				+ "where $sp/text() = \"Lorant\"\n"
-				+ "return <title>{$a//title}</title>,\n"
-				+ "        <YearPrice>{\n"
-				+ "            <first>{$sc//first}</first>,\n"
-				+ "            <price>{$a//price}</price>\n"
-				+ "        }</YearPrice>\n" + "}</result>\n";
+		String testbib = "<result>{\n"
+				+"for $a in doc(\"bib.xml\")//book,\n"
+				+"    $sc in $a//author,\n"
+				+"    $sp in $sc/last,\n"
+				+"    $x in doc(\"bib.xml\")//reviews\n"
+				+"where $sp/text() = \"Lorant\"\n"
+				+"return <title>{$a//title/text()}</title>,\n"
+				+"        <YearPrice>{\n"
+				+"            <first>{$sc//first/text()}</first>,\n"
+				+"            <price>{$x//price/text()}</price>\n"
+				+"        }</YearPrice>\n"
+				+"}</result>\n";
+
 
 		String test2 = "for $s in document(\"j_caesar.xml\")//SPEAKER \n"
-				+ "return <speaks>{(<who>{$s/text()}</who>), \n"
+				+ "return <speaks>{<who>{$s/text()}</who>, \n"
 				+ "                for $a in document(\"j_caesar.xml\")//ACT\n"
 				+ "                where some $s1 in $a//SPEAKER satisfies $s1 eq $s\n"
-				+ "                return <when>{$a/TITLE/text()}</when>}\n"
-				+ "</speaks>\n";
-		String test2s = "<speaks>{\n"
-				+ "                for $a in document(\"j_caesar.xml\")//ACT\n"
-				+ "                where some $s1 in $a//SPEAKER/text() satisfies $s1 eq \"TITINIUS\"\n"
-				+ "                return <when>{$a/TITLE/text()}</when>}\n"
+				+ "                return <when>{$a/title/text()}</when>}\n"
 				+ "</speaks>\n";
 
 		String test3 = "for $A in document(\"bib.xml\")/AS\n"
@@ -77,8 +74,15 @@ public class Run implements XQueryParserTreeConstants {
 
 		String testCond1 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
 				+ "$tb in $b/title,\n $tt in $t//title\n"
+<<<<<<< Updated upstream
+				+ "where $tb/text() = $tt/text()\n" + "return $b,$t";
+||||||| merged common ancestors
 				+ "where $tb/text() = $tt/text()\n"
-				+ "return <t>{($t//price),$t//title}</t>";
+				+ "return $b/price";
+=======
+				+ "where $tb/text() = $tt/text()\n"
+				+ "return $b/price,$t//price";
+>>>>>>> Stashed changes
 		String testCond2 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
 				+ "$tb in $b/title,\n $tt in $t//title\n"
 				+ "where some $tx in $tb/text(), $ty in $tt/text() satisfies $tx=$ty\n"
@@ -86,9 +90,8 @@ public class Run implements XQueryParserTreeConstants {
 		String testCond3 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
 				+ "$tb in $b/title,\n $tt in $t//title\n"
 				+ "where not($tb/text() = $tt/text())\n" + "return $tb";
-		DebugLogger.MasterRegularLog = false;
-		DebugLogger.MasterDebugLog = false;
-		new Run().runQuery(test);
+//		DebugLogger.MasterRegularLog= false;
+		new Run().runQuery(testbib);
 	}
 
 	void runQuery(String queryStr)
@@ -108,8 +111,7 @@ public class Run implements XQueryParserTreeConstants {
 
 			XQProcessVisitor visitor = new XQProcessVisitor();
 			VariableKeeper res = (VariableKeeper) root.jjtAccept(visitor, null);
-			System.out.println("=============final result=============");
-			res.PrintAllVars();
+			// res.PrintAllVars();
 
 			// here's where we actually walk the tree we've so painfully
 			// constructed and derive an answer to our query

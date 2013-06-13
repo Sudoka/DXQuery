@@ -173,7 +173,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		// To be returned
 		VariableKeeper result = new VariableKeeper();
 		// used as parameter for future AST nodes
-		XContext firstContext = ((XContext)data).clone();
+		XContext firstContext = ((XContext) data).clone();
 
 		int childrenNum = node.jjtGetNumChildren();
 		assert (childrenNum > 0);
@@ -204,15 +204,32 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 					data);
 			// used to create new node
 			DocumentImpl docNew = new DocumentImpl();
-			Element newRoot = docNew.createElement(tag1);
-			for (Node n : tmpXQ.GetNodes()) {
-				// A tricky step
-				newRoot.appendChild(docNew.importNode(n, true));
+			ArrayList<Object> tmpAdd = new ArrayList<Object>();
+
+			if (tmpXQ instanceof VariableKeeperExtended) {
+				// log.ErrorLog("in extended");
+				for (ArrayList<Node> nlist : ((VariableKeeperExtended) tmpXQ).groupList) {
+					Element newTag = docNew.createElement(tag1);
+					for (Node n : nlist) {
+						newTag.appendChild(docNew.importNode(n, true));
+					}
+					Set<VarNode> linkDataSet = ((VariableKeeperExtended) tmpXQ)
+							.RecursiveFindLinkedData(nlist);
+					ArrayList<VarNode> lindDataList = new ArrayList<VarNode>();
+					lindDataList.addAll(linkDataSet);
+					result.AddNodeWithLink(newTag, lindDataList);
+				}
+			} else {
+				// log.ErrorLog("normally process tag");
+				for (Node n : tmpXQ.GetNodes()) {
+					Element newTag = docNew.createElement(tag1);
+					// A tricky step
+					newTag.appendChild(docNew.importNode(n, true));
+					result.AddNodeWithLink(newTag, tmpXQ.GetLinkData(n));
+				}
 			}
 			// a singleton list containing the evaluated result wrapped in tag
-			ArrayList<Object> tmpAdd = new ArrayList<Object>();
-			tmpAdd.add(newRoot);
-			result.InitializeWithNodeList(tmpAdd);
+			// result.InitializeWithNodeList(tmpAdd);
 			if (childrenNum == 3) {
 				return result;
 			}
@@ -310,10 +327,9 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				assert (thirdChildId == JJTRP);
 				int opeartion = (secondChildId == JJTSINGLESLASH ? DomOperations.RP_SIMPLE_FETCH
 						: DomOperations.RP_RECURSIVE_FETCH);
-				VariableKeeper tmpResult = ((AST_RP) thirdChild)
-						.EvaluateRPUnderVariable(result, (AST_RP) thirdChild,
-								opeartion);
-				return tmpResult;
+				result = ((AST_RP) thirdChild).EvaluateRPUnderVariable(result,
+						(AST_RP) thirdChild, opeartion);
+				return result;
 			case JJTCOMMA:
 				assert (thirdChildId == JJTXQ);
 				/**
@@ -322,14 +338,19 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				 * parameter. Also, with comma, the production should be XQ,XQ
 				 * return the concatenated result
 				 */
-				VariableKeeper result2 = (VariableKeeper) thirdChild.jjtAccept(
-						this, data);
-				VariableKeeper finalResult = result.CreateByMerge(result2);
-				return finalResult;
+				// VariableKeeper result2 = (VariableKeeper)
+				// thirdChild.jjtAccept(
+				// this, data);
+				// result = result.CreateByMerge(result2);
+				// log.ErrorLog("in processing comma");
+				result = NodeProcessor.ProcessComma(this, result,
+						(AST_XQ) thirdChild, ((XContext) data));
+				return result;
 			case JJTLETCLAUSE:
 				/**
 				 * in this case, we got the production rule For Let Return
 				 */
+
 				assert (firstChildId == JJTFORCLAUSE && thirdChildId == JJTRETURNCLAUSE);
 				XContext secondContext = (XContext) secondChild.jjtAccept(this,
 						firstContext);
@@ -374,13 +395,13 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			 */
 			fourthChild = (SimpleNode) node.children[3];
 			fourthChildId = fourthChild.getId();
+			assert (fourthChildId == JJTCOMMA);
 			SimpleNode fifthChild = (SimpleNode) node.children[4];
 			int fifthChildId = fifthChild.getId();
 			assert (fifthChildId == JJTXQ);
-			VariableKeeper result2 = (VariableKeeper) fifthChild.jjtAccept(
-					this, data);
-			VariableKeeper finalResult = result.CreateByMerge(result2);
-			return finalResult;
+			result = NodeProcessor.ProcessComma(this, result,
+					(AST_XQ) fifthChild, ((XContext) data));
+			return result;
 		default:
 			secondChild = (SimpleNode) node.children[1];
 			secondChildId = secondChild.getId();
@@ -491,7 +512,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		// need more work to implement the correct behavior
 		Object toBeKeeped = node.children[0].jjtAccept(this, newContext);
 		if (toBeKeeped instanceof XContext) {
-			return (XContext)toBeKeeped;
+			return (XContext) toBeKeeped;
 		} else {
 			VariableKeeper keepList = (VariableKeeper) toBeKeeped;
 			log.DebugLog("In Where, to be keeped:" + keepList.size());
@@ -744,10 +765,10 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		Object condResult = lastNode.jjtAccept(this, result);
 
 		if (condResult instanceof XContext) {
-			XContext condContext = (XContext)condResult;
+			XContext condContext = (XContext) condResult;
 			XContext originalContext = result.clone();
 			for (String varName : result.GetVarNames()) {
-				if(!condContext.GetVarNames().contains(varName)){
+				if (!condContext.GetVarNames().contains(varName)) {
 					originalContext.Remove(varName);
 				}
 			}
@@ -755,22 +776,22 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		} else {
 			Set<String> keepVarName = new HashSet<String>();
 			VariableKeeper keepList = (VariableKeeper) condResult;
-			if (keepList != null && keepList.size() > 0
-					&& keepList.GetVarNodeList() != null) {
-				for (VarNode varNode : keepList.GetVarNodeList()) {
-					try {
-						keepVarName.add(varNode.name);
-					} catch (NullPointerException e) {
-						log.ErrorLog("about line 745");
-					}
-				}
-			}
-			XContext finalResult = context.clone();
-			for (String varName : result.GetVarNames()) {
-				if (!keepVarName.contains(varName)) {
-					keepVarName.remove(varName);
-				}
-			}
+//			if (keepList != null && keepList.size() > 0
+//					&& keepList.GetVarNodeList() != null) {
+//				for (VarNode varNode : keepList.GetVarNodeList()) {
+//					try {
+//						keepVarName.add(varNode.name);
+//					} catch (NullPointerException e) {
+//						log.ErrorLog("about line 745");
+//					}
+//				}
+//			}
+			XContext finalResult = keepList.GenerateKeepContext();
+//			for (String varName : result.GetVarNames()) {
+//				if (!keepVarName.contains(varName)) {
+//					keepVarName.remove(varName);
+//				}
+//			}
 			return finalResult;
 		}
 	}

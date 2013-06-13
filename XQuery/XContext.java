@@ -9,7 +9,7 @@ public class XContext {
 
 	public DebugLogger log = new DebugLogger("XContext");
 
-	private HashMap<String, VariableKeeper> context = null;
+	protected HashMap<String, VariableKeeper> context = null;
 
 	private HashMap<Node, Integer> removeStatusIndicator = null;
 

@@ -3,7 +3,9 @@ package XQuery;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
+import org.apache.xerces.dom.DocumentImpl;
 
 import org.w3c.dom.Node;
 
@@ -12,7 +14,7 @@ public class VariableKeeper {
 	public static final int IS_DISJOINT = 2;
 
 	// hashmap used as index for hash join
-	private HashMap<Node, ArrayList<VarNode>> hashIndex = null;
+	protected HashMap<Node, ArrayList<VarNode>> hashIndex = null;
 
 	// link
 	// private ArrayList<ArrayList<VarNode>> linkedData = null;
@@ -24,6 +26,11 @@ public class VariableKeeper {
 	public VariableKeeper() {
 		hashIndex = new HashMap<Node, ArrayList<VarNode>>();
 		// linkedData = new ArrayList<ArrayList<VarNode>>();
+	}
+
+	public VariableKeeper(Node node, ArrayList<VarNode> linkedData) {
+		hashIndex = new HashMap<Node, ArrayList<VarNode>>();
+		hashIndex.put(node, linkedData);
 	}
 
 	public VariableKeeper(ArrayList<Object> nodeList) {
@@ -43,7 +50,25 @@ public class VariableKeeper {
 		return result;
 	}
 
+	protected void MergeVK(VariableKeeper vk) {
+		this.hashIndex.putAll(vk.hashIndex);
+	}
+
 	public void PrintAllVars() {
+		// if (this instanceof VariableKeeperExtended) {
+		// for (ArrayList<Node> nlist : ((VariableKeeperExtended)
+		// this).groupList) {
+		// for (Node node : nlist) {
+		// try {
+		// System.out.println(DOMPrinter.printXML(node));
+		// } catch (IOException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
+		// }
+		// }
+		//
+		// } else {
 		for (Node node : hashIndex.keySet()) {
 			try {
 				System.out.println(DOMPrinter.printXML(node));
@@ -52,6 +77,7 @@ public class VariableKeeper {
 				e.printStackTrace();
 			}
 		}
+		// }
 	}
 
 	public VariableKeeper clone() {
@@ -149,7 +175,7 @@ public class VariableKeeper {
 						for (int i = 2; i < bound; i++) {
 							Node node1Parent = varNodeList1.get(size1 - i).node;
 							Node node2Parent = varNodeList2.get(size2 - i).node;
-							if (!node1Parent.isSameNode(node2Parent) ) {
+							if (!node1Parent.isSameNode(node2Parent)) {
 								result.AddNodeWithLink(node2,
 										var2.GetLinkData(node2));
 							}
@@ -276,10 +302,12 @@ public class VariableKeeper {
 		else
 			this.Name = null;
 		for (ArrayList<VarNode> vn : hashIndex.values()) {
-			if (name != null)
-				vn.get(vn.size() - 1).name = new String(name);
-			else {
-				vn.get(vn.size() - 1).name = null;
+			if (vn != null) {
+				if (name != null) {
+					vn.get(vn.size() - 1).name = new String(name);
+				} else {
+					vn.get(vn.size() - 1).name = null;
+				}
 			}
 		}
 	}
@@ -357,36 +385,48 @@ public class VariableKeeper {
 		return context;
 	}
 
-}
-
-class VarNode {
-	String name = null;
-	Node node = null;
-
-	public VarNode() {
-		// TODO Auto-generated constructor stub
-	}
-
-	public VarNode(String name, Node node) {
-		if (name == null)
-			this.name = "";
-		else
-			this.name = new String(name);
-		this.node = node;
-	}
-
-	public VarNode clone() {
-		String nameClone = null;
-		if (this.name != null)
-			nameClone = new String(this.name);
-		return new VarNode(nameClone, this.node);
-	}
-
-	public boolean equals(VarNode v) {
-		assert ((v.node.isSameNode(node)) == (v.node == node));
-		if (v.name.equals(this.name) && NodeProcessor.CheckEQ(v.node, node)) {
-			return true;
+	public VariableKeeper GroupByTag(String tagName, DocumentImpl doc) {
+		// get all the distinct node type names
+		Set<String> tagNames = new HashSet<String>();
+		for (Node node : GetNodes()) {
+			tagNames.add(node.getNodeName());
 		}
-		return false;
+
+		return null;
 	}
+
+	public XContext GenerateKeepContext() {
+		XContext result = new XContext();
+
+		Set<String> keepVarName = new HashSet<String>();
+		if (size() > 0 && GetVarNodeList() != null) {
+			for (ArrayList<VarNode> vnlist : hashIndex.values()) {
+				for (VarNode varNode : vnlist) {
+					if (varNode.name != null && varNode.name != "")
+						keepVarName.add(varNode.name);
+				}
+			}
+		}
+
+		for (String string : keepVarName) {
+			VariableKeeper vk = new VariableKeeper();
+			for (ArrayList<VarNode> vnlist : hashIndex.values()) {
+				for (VarNode varNode : vnlist) {
+					if (varNode.name.equals(string)) {
+						if (this.GetLinkData(varNode.node) == null) {
+							ArrayList<VarNode> newlink = new ArrayList<VarNode>();
+							newlink.add(varNode);
+							vk.AddNodeWithLink(varNode.node, newlink);
+						} else {
+							vk.AddNodeWithLink(varNode.node,
+									this.GetLinkData(varNode.node));
+						}
+					}
+				}
+			}
+			result.Extend(string, vk);
+		}
+		return result;
+	}
+
 }
