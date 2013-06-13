@@ -807,11 +807,16 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 			} else if (keepFlag == REMOVE_VARKEEPER) {
 				if (keepOb instanceof XContext) {
 					XContext keepCon = (XContext) keepOb;
-					keepCon.Intersect(keepList);
+					XContext tmpCon1 = keepList.GenerateKeepContext();
+					keepCon.AndIntersect(tmpCon1);
 					return keepCon;
 				} else {
-					VariableKeeper keepVK = (VariableKeeper) keepOb;
-					return keepList.Intersect(keepVK);
+					XContext tmpCon1 = keepList.GenerateKeepContext();
+					XContext tmpCon2 = ((VariableKeeper) keepOb).GenerateKeepContext();
+//					VariableKeeper keepVK = (VariableKeeper) keepOb;
+//					return keepList.Intersect(keepVK);
+					 tmpCon1.AndIntersect(tmpCon2);
+					 return tmpCon1;
 				}
 			} else {
 				log.ErrorLog("Remove Flag has unexpected value!!!");

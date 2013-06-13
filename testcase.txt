@@ -1,10 +1,12 @@
-for $a3 in doc("j_caesar.xml")//ACT,
-$a5 in doc("j_caesar.xml")//ACT,
-$s3 in $a3/SCENE/SPEECH/SPEAKER/text(), 
-$s5 in $a5/SCENE/SPEECH/SPEAKER/text(),
-$t3 in $a3/TITLE/text(),
-$t5 in $a5/TITLE/text()
-where $s3 eq $s5 and $t3 eq "ACT III" and $t5 eq "ACT V"
-return <speaks>{
-  <who>{$s3}</who>
-} </speaks>
+<result>{
+for $a in document("j_caesar.xml")//ACT,
+    $sc in $a//SCENE,
+    $sp in $sc/SPEECH,
+	$l in $sp/LINE
+where $l/text() = "Et tu, Brute! Then fall, Caesar."
+return <who>{$sp/SPEAKER/text()}</who>,
+       <when>{<act>{$a/TITLE/text()}</act>,
+             <scene>{$sc/TITLE/text()}</scene>,
+					<line>{$l/text()}</line>}
+       </when>
+}</result>

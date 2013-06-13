@@ -21,9 +21,9 @@ public class Run implements XQueryParserTreeConstants {
 	public static void main(String[] args)
 	// --------------------------------------
 	{
-
-		 DebugLogger.MasterRegularLog = false;
-		 DebugLogger.MasterDebugLog = false;
+//		DebugLogger.MasterControl = false;
+//		 DebugLogger.MasterRegularLog = false;
+//		 DebugLogger.MasterDebugLog = false;
 
 		String testcase = "";
 		try {
@@ -65,7 +65,7 @@ public class Run implements XQueryParserTreeConstants {
 
 			XQProcessVisitor visitor = new XQProcessVisitor();
 			visitor.log.SetObjectControl(false, false, true);
-			visitor.optimize = false;
+			visitor.optimize = true;
 			VariableKeeper res = (VariableKeeper) root.jjtAccept(visitor, null);
 			System.out.println("=============final result=============");
 			res.PrintAllVars();

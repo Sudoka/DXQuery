@@ -156,9 +156,12 @@ public class XContext {
 
 	public void Subtract(XContext subContext) {
 		for (String str : subContext.context.keySet()) {
-			VariableKeeper vk1 = context.get(str);
-			VariableKeeper vk2 = subContext.context.get(str);
-			vk1.Subtract(vk2);
+			if (subContext.context.containsKey(str)) {
+				VariableKeeper vk1 = context.get(str);
+				VariableKeeper vk2 = subContext.context.get(str);
+				if (vk1 != null && vk2 != null)
+					vk1.Subtract(vk2);
+			}
 		}
 	}
 
@@ -205,6 +208,39 @@ public class XContext {
 		varNameList.removeAll(remove);
 		for (String string : varNameList) {
 			context.get(string).Subtract(con.context.get(string));
+		}
+	}
+
+	private boolean hasVarNode(VarNode vn) {
+		if (!context.containsKey(vn.name)) {
+			return false;
+		} else {
+			VariableKeeper vk = context.get(vn.name);
+			if (!vk.hashIndex.containsKey(vn.node)) {
+				return false;
+			}
+			return true;
+		}
+	}
+
+	public void AndIntersect(XContext con) {
+		for (String varName : con.context.keySet()) {
+			if (!context.containsKey(varName)) {
+				Extend(varName, con.context.get(varName));
+			} else {
+				VariableKeeper vk = context.get(varName);
+				VariableKeeper newVk = vk.Intersect(con.context.get(varName));
+				context.put(varName, newVk);
+			}
+		}
+		XContext tmpCon = clone();
+		for (String varName : tmpCon.context.keySet()) {
+			VariableKeeper vk = tmpCon.context.get(varName);
+			for (Node vnode : vk.hashIndex.keySet()) {
+				if (!(hasVarNode(vk.GetLinkData(vnode).get(0)))) {
+					context.get(varName).hashIndex.remove(vnode);
+				}
+			}
 		}
 	}
 

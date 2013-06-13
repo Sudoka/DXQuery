@@ -1,0 +1,10 @@
+for $a3 in doc("j_caesar.xml")//ACT,
+    $a5 in doc("j_caesar.xml")//ACT,
+    $s3 in $a3//SPEAKER/text(),
+    $s5 in $a5/SCENE/SPEECH/SPEAKER/text(),
+    $t3 in $a3/TITLE/text(),
+    $t5 in $a5/TITLE/text()
+    where $s3 eq $s5 and $t3 eq "ACT III" and $t5 eq "ACT V"
+    return  <speaks>{
+        <who>{$s3}</who>
+    }</speaks>
