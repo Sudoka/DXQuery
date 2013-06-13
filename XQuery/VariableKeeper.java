@@ -378,11 +378,7 @@ public class VariableKeeper {
 	}
 
 	public XContext ConverToContext() {
-		XContext context = new XContext();
-		for (VarNode varnode : GetVarNodeList()) {
-			context.PutNodeWithLinkData(varnode, GetLinkData(varnode.node));
-		}
-		return context;
+		return GenerateKeepContext();
 	}
 
 	public VariableKeeper GroupByTag(String tagName, DocumentImpl doc) {
