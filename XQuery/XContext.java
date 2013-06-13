@@ -2,14 +2,19 @@ package XQuery;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import org.w3c.dom.Node;
+
+import Optimizer.AbstractBaseCondNode;
 
 public class XContext {
 
 	public DebugLogger log = new DebugLogger("XContext");
 
 	protected HashMap<String, VariableKeeper> context = null;
+
+	public ArrayList<AbstractBaseCondNode> baseCondNodes = null;
 
 	private HashMap<Node, Integer> removeStatusIndicator = null;
 
@@ -220,4 +225,17 @@ public class XContext {
 			Extend(node.name, newVK);
 		}
 	}
+
+	public Set<String> getAncestorNameSet(String var) {
+		VariableKeeper data = context.get(var);
+		Set<String> resultSet = new HashSet<String>();
+		for (ArrayList<VarNode> varNodeList : data.hashIndex.values()) {
+			for (VarNode varNode : varNodeList) {
+				resultSet.add(varNode.name);
+			}
+			break;
+		}
+		return resultSet;
+	}
+
 }

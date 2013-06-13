@@ -86,9 +86,24 @@ public class Run implements XQueryParserTreeConstants {
 		String testCond3 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
 				+ "$tb in $b/title,\n $tt in $t//title\n"
 				+ "where not($tb/text() = $tt/text())\n" + "return $tb";
-		DebugLogger.MasterRegularLog = false;
-		DebugLogger.MasterDebugLog = false;
-		new Run().runQuery(test);
+		
+		String testJoin = "for $a3 in doc(\"j_caesar.xml\")//ACT,\n"
+				+"    $a5 in doc(\"j_caesar.xml\")//ACT,\n"
+				+"    $s3 in $a3/SCENE/SPEECH/SPEAKER/text(),\n"
+				+"    $s5 in $a5/SCENE/SPEECH/SPEAKER/text(),\n"
+				+"    $t3 in $a3/TITLE/text(),\n"
+				+"    $t5 in $a5/TITLE/text()\n"
+				+"where $s3 eq $s5 and $t3 eq \"ACT III\" and $t5 eq \"ACT V\"\n"
+				+"return  <speaks>{\n"
+				+"        <who>{$s3}</who>\n"
+				+"        }</speaks>\n";
+
+
+		
+		
+//		DebugLogger.MasterRegularLog = false;
+//		DebugLogger.MasterDebugLog = false;
+		new Run().runQuery(testJoin);
 	}
 
 	void runQuery(String queryStr)
@@ -107,6 +122,8 @@ public class Run implements XQueryParserTreeConstants {
 			System.out.println();
 
 			XQProcessVisitor visitor = new XQProcessVisitor();
+			visitor.log.SetObjectControl(false, false, true);
+			visitor.optimize = true;
 			VariableKeeper res = (VariableKeeper) root.jjtAccept(visitor, null);
 			System.out.println("=============final result=============");
 			res.PrintAllVars();

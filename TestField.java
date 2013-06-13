@@ -1,5 +1,7 @@
 import java.io.StringReader;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.w3c.dom.Node;
 
@@ -17,6 +19,22 @@ public class TestField {
 	 */
 	public static void main(String[] args) throws ParseException {
 
+		Set<String> test1 = new HashSet<String>();
+		String a = "a";
+		test1.add(a);
+		String b = new String("b");
+		test1.add(b);
+		test1.add("c");
+		Set<String> test2 = new HashSet<String>();
+		String b2 = new String("b");
+		test2.add(b2);
+		test2.add("d");
+		test2.addAll(test1);
+		System.out.println(test2.size());
+
+	}
+
+	public static void test1() throws ParseException {
 		String testbib = "<result>{\n" + "for $a in doc(\"bib.xml\")//book,\n"
 				+ "    $sc in $a//author,\n" + "    $sp in $sc/last\n"
 				+ "where $sp/text() = \"Lorant\"\n"
@@ -52,4 +70,5 @@ public class TestField {
 		testMap1.put(testCopy, "testCopy 1");
 
 	}
+
 }

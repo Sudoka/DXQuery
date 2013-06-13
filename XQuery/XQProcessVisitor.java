@@ -13,6 +13,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
+import Optimizer.AbstractBaseCondNode;
+import Optimizer.OptimizeNodeProcessor;
+
 /**
  * @author QDX
  * 
@@ -29,6 +32,8 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 
 	public final int REMOVE_VARKEEPER = 1;
 	public final int REMOVE_CONTEXT = 2;
+
+	public boolean optimize = false;
 
 	public XQProcessVisitor() {
 		log = new DebugLogger("XQProcessVisitor");
@@ -360,8 +365,23 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 				 * in this case, we got the production rule For Where Return
 				 */
 				assert (firstChildId == JJTFORCLAUSE && thirdChildId == JJTRETURNCLAUSE);
+				if (optimize) {
+					OptimizeNodeProcessor oNP = new OptimizeNodeProcessor();
+					XContext optimizeContext = firstContext.clone();
+					assert (secondChild.jjtGetNumChildren() == 1);
+					SimpleNode condNode = (SimpleNode) secondChild
+							.jjtGetChild(0);
+					assert (condNode.getId() == JJTCOND);
+					oNP.condGetOptimizeRecords(optimizeContext,
+							(AST_COND) condNode);
+					for (AbstractBaseCondNode baseNode : optimizeContext.baseCondNodes) {
+						baseNode.printThisNode();
+					}
+					
+				}
 				secondContext = (XContext) secondChild.jjtAccept(this,
 						firstContext);
+
 				return thirdChild.jjtAccept(this, secondContext);
 			default:
 				log.ErrorLog("Encountered unexpected third child:["
@@ -776,22 +796,22 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		} else {
 			Set<String> keepVarName = new HashSet<String>();
 			VariableKeeper keepList = (VariableKeeper) condResult;
-//			if (keepList != null && keepList.size() > 0
-//					&& keepList.GetVarNodeList() != null) {
-//				for (VarNode varNode : keepList.GetVarNodeList()) {
-//					try {
-//						keepVarName.add(varNode.name);
-//					} catch (NullPointerException e) {
-//						log.ErrorLog("about line 745");
-//					}
-//				}
-//			}
+			// if (keepList != null && keepList.size() > 0
+			// && keepList.GetVarNodeList() != null) {
+			// for (VarNode varNode : keepList.GetVarNodeList()) {
+			// try {
+			// keepVarName.add(varNode.name);
+			// } catch (NullPointerException e) {
+			// log.ErrorLog("about line 745");
+			// }
+			// }
+			// }
 			XContext finalResult = keepList.GenerateKeepContext();
-//			for (String varName : result.GetVarNames()) {
-//				if (!keepVarName.contains(varName)) {
-//					keepVarName.remove(varName);
-//				}
-//			}
+			// for (String varName : result.GetVarNames()) {
+			// if (!keepVarName.contains(varName)) {
+			// keepVarName.remove(varName);
+			// }
+			// }
 			return finalResult;
 		}
 	}
