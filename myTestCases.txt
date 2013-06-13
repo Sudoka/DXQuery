@@ -1,0 +1,98 @@
+<result>{
+for $a in document("j_caesar.xml")//ACT,
+$sc in $a//SCENE,
+$sp in $sc/SPEECH
+where $sp/LINE/text() = "Et tu, Brute! Then fall, Caesar."
+return <who>{$sp/SPEAKER/text()}</who>,
+       <when>{<act>{$a/TITLE/text()}</act>,
+           <scene>{$sc/TITLE/text()}</scene>}
+           </when>
+}</result>
+
+<result>{
+for $a in doc("bib.xml")//book,
+$sc in $a//author,
+$sp in $sc/last,
+    $x in doc("bib.xml")//reviews
+    where $sp/text() = "Lorant"
+    return <title>{$a//title}</title>,
+    <YearPrice>{
+        <first>{$sc//first}</first>,
+        <price>{$a//price}</price>
+    }</YearPrice>
+}</result>
+
+for $a in doc("bib.xml")//book,
+	$st in $a//title,
+	$sl in $a//last/text(),
+	$x in doc("bib.xml")//reviews,
+	$xt in $x//title
+where $sl = "Lorant" and $xt = $st
+return <title>{$a//price}</title>
+
+for $s in document("j_caesar.xml")//SPEAKER 
+return <speaks>{(<who>{$s/text()}</who>), 
+    for $a in document("j_caesar.xml")//ACT
+        where some $s1 in $a//SPEAKER satisfies $s1 eq $s
+            return <when>{$a/TITLE/text()}</when>}
+            </speaks>;
+
+<speaks>{
+            for $a in document("j_caesar.xml")//ACT
+            where some $s1 in $a//SPEAKER/text() satisfies $s1 eq "TITINIUS"
+            return <when>{$a/TITLE/text()}</when>}
+</speaks>
+
+for $A in document("bib.xml")/AS
+            where $A = "test"
+            return <a>{$A}</a>;
+
+<result>
+{
+    for $a in document("j_caesar.xml")//ACT,
+        $sc in $a//SCENE,
+            $sp in $sc/SPEECH
+                where $sp/LINE/text() = "Et tu, Brute! Then fall, Caesar."
+                return <who>{$sp/SPEAKER/text()}</who>,
+            <when>{
+                <act>{$a/title/text()}</act>,
+                <scene>{$sc/title/text()}</scene>
+            } </when>
+}
+</result>;
+
+for $s in document("j_caesar.xml")//SPEAKER
+return <speaks>{<who>{$s/text()}</who>,
+    for $a in document("j_caesar.xml")//ACT
+        where some $s1 in $a//SPEAKER satisfies $s1 eq $s
+            return <when>{$a/title/text()}</when>}
+            </speaks>
+
+for $b in doc("bib.xml")/bib, $c in $b/book/year return <test>{$c}</test>
+let $b := doc("bib.xml")/bib, $c := $b/book for $d in $c/year return $d
+
+for $b in doc("bib.xml")/bib/book,\n $t in doc("bib.xml")/bib/reviews,
+    $tb in $b/title,\n $tt in $t//title
+where $tb/text() = $tt/text()
+    return <t>{($t//price),$t//title}</t>
+
+for $b in doc("bib.xml")/bib/book,\n $t in doc("bib.xml")/bib/reviews,
+    $tb in $b/title,\n $tt in $t//title
+    where some $tx in $tb/text(), $ty in $tt/text() satisfies $tx=$ty
+    return $tb/text()
+
+for $b in doc("bib.xml")/bib/book,\n $t in doc("bib.xml")/bib/reviews,
+    $tb in $b/title,\n $tt in $t//title
+    where not($tb/text() = $tt/text())\n
+    return $tb
+
+for $a3 in doc("j_caesar.xml")//ACT,
+    $a5 in doc("j_caesar.xml")//ACT,
+$s3 in $a3/SCENE/SPEECH/SPEAKER/text(),
+    $s5 in $a5/SCENE/SPEECH/SPEAKER/text(),
+    $t3 in $a3/TITLE/text(),
+    $t5 in $a5/TITLE/text()
+    where $s3 eq $s5 and $t3 eq "ACT III" and $t5 eq "ACT V"
+    return  <speaks>{\n
+        <who>{$s3}</who>
+    }</speaks>

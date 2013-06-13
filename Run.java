@@ -1,5 +1,9 @@
 import XQuery.*;
 
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.lang.Integer;
 import java.util.ArrayList;
@@ -18,92 +22,30 @@ public class Run implements XQueryParserTreeConstants {
 	// --------------------------------------
 	{
 
-		String test = "<result>{"
-				+ "for $a in document(\"j_caesar.xml\")//ACT,\n"
-				+ "    $sc in $a//SCENE,\n"
-				+ "    $sp in $sc/SPEECH\n"
-				+ "where $sp/LINE/text() = \"Et tu, Brute! Then fall, Caesar.\"\n"
-				+ "return <who>{$sp/SPEAKER/text()}</who>,\n"
-				+ "       <when>{<act>{$a/TITLE/text()}</act>,\n"
-				+ "             <scene>{$sc/TITLE/text()}</scene>}\n"
-				+ "       </when>\n" + "}</result>\n";
-		String testbib = "<result>{\n" + "for $a in doc(\"bib.xml\")//book,\n"
-				+ "    $sc in $a//author,\n" + "    $sp in $sc/last,\n"
-				+ "    $x in doc(\"bib.xml\")//reviews\n"
-				+ "where $sp/text() = \"Lorant\"\n"
-				+ "return <title>{$a//title}</title>,\n"
-				+ "        <YearPrice>{\n"
-				+ "            <first>{$sc//first}</first>,\n"
-				+ "            <price>{$a//price}</price>\n"
-				+ "        }</YearPrice>\n" + "}</result>\n";
+		// DebugLogger.MasterRegularLog = false;
+		// DebugLogger.MasterDebugLog = false;
 
-		String test2 = "for $s in document(\"j_caesar.xml\")//SPEAKER \n"
-				+ "return <speaks>{(<who>{$s/text()}</who>), \n"
-				+ "                for $a in document(\"j_caesar.xml\")//ACT\n"
-				+ "                where some $s1 in $a//SPEAKER satisfies $s1 eq $s\n"
-				+ "                return <when>{$a/TITLE/text()}</when>}\n"
-				+ "</speaks>\n";
-		String test2s = "<speaks>{\n"
-				+ "                for $a in document(\"j_caesar.xml\")//ACT\n"
-				+ "                where some $s1 in $a//SPEAKER/text() satisfies $s1 eq \"TITINIUS\"\n"
-				+ "                return <when>{$a/TITLE/text()}</when>}\n"
-				+ "</speaks>\n";
+		String testcase = "";
+		try {
+			// Open the file that is the first
+			// command line parameter
+			FileInputStream fstream = new FileInputStream("testcase.txt");
+			// Get the object of DataInputStream
+			DataInputStream in = new DataInputStream(fstream);
+			BufferedReader br = new BufferedReader(new InputStreamReader(in));
+			String strLine;
+			// Read File Line By Line
+			while ((strLine = br.readLine()) != null) {
+				// Print the content on the console
+				testcase += (strLine+"\n");
+			}
+			// Close the input stream
+			in.close();
+		} catch (Exception e) {// Catch exception if any
+			System.err.println("Error: " + e.getMessage());
+		}
 
-		String test3 = "for $A in document(\"bib.xml\")/AS\n"
-				+ "where $A = \"test\"\n" + "return <a>{$A}</a>\n";
-
-		String test4 = "<result>\n"
-				+ "{\n"
-				+ "for $a in document(\"j_caesar.xml\")//ACT,\n"
-				+ "    $sc in $a//SCENE,\n"
-				+ "    $sp in $sc/SPEECH\n"
-				+ "where $sp/LINE/text() = \"Et tu, Brute! Then fall, Caesar.\"\n"
-				+ "return <who>{$sp/SPEAKER/text()}</who>,\n"
-				+ "       <when>{\n" + "	      <act>{$a/title/text()}</act>,\n"
-				+ "              <scene>{$sc/title/text()}</scene>\n"
-				+ "       	     } </when>\n" + "}\n" + "</result>\n";
-
-		String test5 = "for $s in document(\"j_caesar.xml\")//SPEAKER\n"
-				+ "return <speaks>{<who>{$s/text()}</who>,\n"
-				+ "                for $a in document(\"j_caesar.xml\")//ACT\n"
-				+ "                where some $s1 in $a//SPEAKER satisfies $s1 eq $s\n"
-				+ "                return <when>{$a/title/text()}</when>}\n"
-				+ "       </speaks>\n";
-		String teststr = "\t\n";
-		System.out.println(teststr.trim().length());
-
-		String testAP = "for $b in doc(\"bib.xml\")/bib, $c in $b/book/year return <test>{$c}</test>";
-		String testLet = "let $b := doc(\"bib.xml\")/bib, $c := $b/book for $d in $c/year return $d";
-
-		String testCond1 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
-				+ "$tb in $b/title,\n $tt in $t//title\n"
-				+ "where $tb/text() = $tt/text()\n"
-				+ "return <t>{($t//price),$t//title}</t>";
-		String testCond2 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
-				+ "$tb in $b/title,\n $tt in $t//title\n"
-				+ "where some $tx in $tb/text(), $ty in $tt/text() satisfies $tx=$ty\n"
-				+ "return $tb/text()";
-		String testCond3 = "for $b in doc(\"bib.xml\")/bib/book,\n $t in doc(\"bib.xml\")/bib/reviews,\n"
-				+ "$tb in $b/title,\n $tt in $t//title\n"
-				+ "where not($tb/text() = $tt/text())\n" + "return $tb";
-		
-		String testJoin = "for $a3 in doc(\"j_caesar.xml\")//ACT,\n"
-				+"    $a5 in doc(\"j_caesar.xml\")//ACT,\n"
-				+"    $s3 in $a3/SCENE/SPEECH/SPEAKER/text(),\n"
-				+"    $s5 in $a5/SCENE/SPEECH/SPEAKER/text(),\n"
-				+"    $t3 in $a3/TITLE/text(),\n"
-				+"    $t5 in $a5/TITLE/text()\n"
-				+"where $s3 eq $s5 and $t3 eq \"ACT III\" and $t5 eq \"ACT V\"\n"
-				+"return  <speaks>{\n"
-				+"        <who>{$s3}</who>\n"
-				+"        }</speaks>\n";
-
-
-		
-		
-//		DebugLogger.MasterRegularLog = false;
-//		DebugLogger.MasterDebugLog = false;
-		new Run().runQuery(testJoin);
+		new Run().runQuery(testcase);
 	}
 
 	void runQuery(String queryStr)

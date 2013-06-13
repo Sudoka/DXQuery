@@ -13,8 +13,11 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
+import com.sun.corba.se.spi.orbutil.fsm.Guard.Result;
+
 import Optimizer.AbstractBaseCondNode;
 import Optimizer.OptimizeNodeProcessor;
+import Optimizer.Partition;
 
 /**
  * @author QDX
@@ -34,6 +37,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	public final int REMOVE_CONTEXT = 2;
 
 	public boolean optimize = false;
+	public boolean noNestedXQRewrite = false;
 
 	public XQProcessVisitor() {
 		log = new DebugLogger("XQProcessVisitor");
@@ -92,6 +96,24 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	 */
 	@Override
 	public Object visit(AST_AP node, Object data) {
+
+		if (noNestedXQRewrite) {
+			assert (node.jjtGetNumChildren() == 3);
+			processor.rpTextMode = true;
+			ArrayList<Object> rpResult = processor.ProcessRP(
+					(AST_RP) node.children[2], null, 0);
+			String rpResultStr = (String) rpResult.get(0);
+			AST_FILENAME filename = (AST_FILENAME) node.children[0];
+			String filenameStr = filename.getText();
+			int middleId = ((SimpleNode) node.children[1]).getId();
+			String middle = middleId == JJTSINGLESLASH ? "/" : "//";
+			String result = "doc(\"" + filenameStr + "\")" + middle
+					+ rpResultStr;
+			log.DebugLog("Text Mode, get ap:" + result);
+			processor.rpTextMode = false;
+			return result;
+		}
+
 		log.SetObjectControl(true, true, true);
 		log.RegularLog("Visit: AST_AP" + " <" + node.jjtGetNumChildren() + ">");
 
@@ -173,12 +195,6 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 	@Override
 	public Object visit(AST_XQ node, Object data) {
 		log.RegularLog("Visit: AST_XQ" + " <" + node.jjtGetNumChildren() + ">");
-		//
-		assert (data instanceof XContext);
-		// To be returned
-		VariableKeeper result = new VariableKeeper();
-		// used as parameter for future AST nodes
-		XContext firstContext = ((XContext) data).clone();
 
 		int childrenNum = node.jjtGetNumChildren();
 		assert (childrenNum > 0);
@@ -186,9 +202,74 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 		SimpleNode firstChild = (SimpleNode) node.children[0];
 		int firstChildId = firstChild.getId();
 
+		if (noNestedXQRewrite) {
+			switch (childrenNum) {
+			case 1:
+				switch (firstChildId) {
+				case JJTAP:
+					String apResult = (String) firstChild.jjtAccept(this, data);
+					return apResult;
+				case JJTVAR:
+					String varResult = firstChild.getText();
+					String varModifiedResult = "$tuple/"+varResult.substring(1);
+					return varModifiedResult;
+				default:
+					log.ErrorLog("Text mode in XQ, encountered unexpected first child!");
+					break;
+				}
+			case 3:
+				SimpleNode secondChild = (SimpleNode) node.children[1];
+				int secondChildId = secondChild.getId();
+				SimpleNode thirdChild = (SimpleNode) node.children[2];
+				int thirdChildId = thirdChild.getId();
+				switch (firstChildId) {
+				case JJTTAGNAME:
+					assert (secondChildId == JJTXQ);
+					String xqResult = (String) secondChild
+							.jjtAccept(this, data);
+					String tagName = firstChild.getText();
+					String resultStr = "<" + tagName + ">{" + xqResult + "}</"
+							+ tagName + ">";
+					return resultStr;
+				case JJTVAR:
+				case JJTAP:
+					assert (secondChildId == JJTSINGLESLASH || secondChildId == JJTDOUBLESLASH);
+					String middleStr = (secondChildId == JJTSINGLESLASH ? "/"
+							: "//");
+					String firstStr = null;
+					if (firstChildId == JJTVAR) {
+						firstStr = firstChild.getText();
+						String varModifiedResult = "$tuple/"+firstStr.substring(1);
+						firstStr = varModifiedResult;						
+					} else {
+						firstStr = (String) firstChild.jjtAccept(this, data);
+					}
+					processor.rpTextMode = true;
+					ArrayList<Object> rpList = processor.ProcessRP(
+							(AST_RP) thirdChild, null, 0);
+					processor.rpTextMode = false;
+					String rpStr = (String) rpList.get(0);
+					resultStr = firstStr + middleStr + rpStr;
+					return resultStr;
+				default:
+					log.ErrorLog("Text mode in XQ, encountered unexpected first child in XQ with 3 children!");
+					break;
+				}
+				break;
+			default:
+				log.ErrorLog("Text mode in XQ, encountered unexpected children number!");
+				break;
+			}
+		}
+		assert (data instanceof XContext);
+		// To be returned
+				VariableKeeper result = new VariableKeeper();
+				// used as parameter for future AST nodes
+				XContext firstContext = ((XContext) data).clone();
 		switch (firstChildId) {
 		// AP be evaluated immediately
 		case JJTAP:
+
 			// appearance of AP at the first child implies this XQ only has one
 			// node
 			assert (childrenNum == 1);
@@ -197,6 +278,7 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 					.jjtAccept(this, data);
 			result.InitializeWithNodeList(apResult);
 			return result;
+
 		case JJTTAGNAME:
 			// get the start and end tags
 			String tag1 = firstChild.getText();
@@ -372,17 +454,19 @@ public class XQProcessVisitor implements XQueryParserVisitor,
 					SimpleNode condNode = (SimpleNode) secondChild
 							.jjtGetChild(0);
 					assert (condNode.getId() == JJTCOND);
-					oNP.condGetOptimizeRecords(optimizeContext,
-							(AST_COND) condNode);
-					for (AbstractBaseCondNode baseNode : optimizeContext.baseCondNodes) {
-						baseNode.printThisNode();
-					}
+					ArrayList<Partition> partitions = oNP
+							.condGetOptimizeRecords(optimizeContext,
+									(AST_COND) condNode);
+					oNP.joinRewrite((AST_FORCLAUSE) firstChild, partitions,
+							this, (AST_RETURNCLAUSE) thirdChild);
+					System.exit(0);
 					
-				}
+				}else{
 				secondContext = (XContext) secondChild.jjtAccept(this,
 						firstContext);
 
 				return thirdChild.jjtAccept(this, secondContext);
+				}
 			default:
 				log.ErrorLog("Encountered unexpected third child:["
 						+ jjtNodeName[thirdChildId] + "] \nwith first child:["

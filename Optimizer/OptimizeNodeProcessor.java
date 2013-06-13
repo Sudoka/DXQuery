@@ -4,16 +4,24 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.sun.xml.internal.bind.v2.TODO;
+
 import XQuery.AST_COND;
+import XQuery.AST_FORCLAUSE;
+import XQuery.AST_RETURNCLAUSE;
 import XQuery.AST_XQ;
 import XQuery.DebugLogger;
 import XQuery.SimpleNode;
+import XQuery.VariableKeeper;
 import XQuery.XContext;
+import XQuery.XQProcessVisitor;
 import XQuery.XQueryParserTreeConstants;
+import XQuery.XQueryParserVisitor;
 
 public class OptimizeNodeProcessor implements XQueryParserTreeConstants {
 
 	public DebugLogger log = new DebugLogger("OptimizeNodeProcessor");
+	private ArrayList<SplitNode> splitNodeList = new ArrayList<SplitNode>();
 
 	/**
 	 * Warning: this method has side effects on context.baseCondNodes
@@ -21,7 +29,8 @@ public class OptimizeNodeProcessor implements XQueryParserTreeConstants {
 	 * @param context
 	 * @param condNode
 	 */
-	public void condGetOptimizeRecords(XContext context, AST_COND condNode) {
+	public ArrayList<Partition> condGetOptimizeRecords(XContext context,
+			AST_COND condNode) {
 		if (context.baseCondNodes == null) {
 			context.baseCondNodes = new ArrayList<AbstractBaseCondNode>();
 		}
@@ -35,6 +44,7 @@ public class OptimizeNodeProcessor implements XQueryParserTreeConstants {
 			}
 		}
 		if (splitNodeNum == 1) {
+			splitNodeList.add(spN);
 			Set<String> partition1 = context.getAncestorNameSet(spN
 					.getBaseBinding().get(0));
 			Set<OperateNode> operateNodes1 = getOperateNodesAndExpandPartition(
@@ -53,23 +63,28 @@ public class OptimizeNodeProcessor implements XQueryParserTreeConstants {
 			tmpSet.addAll(partition1);
 			if (tmpSet.size() < partition1.size() + size2) {
 				log.ErrorLog("Partition failed!");
-				return;
+				return null;
 			}
 
-			String part1 = "Partition1:\n";
-			for (String string : partition1) {
-				part1 += (string + "\n");
-			}
-			log.DebugLog(part1);
-
-			String part2 = "Partition2:\n";
-			for (String string : partition2) {
-				part2 += (string + "\n");
-			}
-			log.DebugLog(part2);
+			// String part1 = "Partition1:\n";
+			// for (String string : partition1) {
+			// part1 += (string + "\n");
+			// }
+			// log.DebugLog(part1);
+			//
+			// String part2 = "Partition2:\n";
+			// for (String string : partition2) {
+			// part2 += (string + "\n");
+			// }
+			// log.DebugLog(part2);
+			ArrayList<Partition> result = new ArrayList<Partition>();
+			result.add(new Partition(partition1, operateNodes1));
+			result.add(new Partition(partition2, operateNodes2));
+			return result;
 
 		} else {
 			log.ErrorLog("Has not implement multiple attribute join yet!!!!!!");
+			return null;
 		}
 	}
 
@@ -137,6 +152,125 @@ public class OptimizeNodeProcessor implements XQueryParserTreeConstants {
 					+ "childrenNum:" + childrenNum);
 			break;
 		}
+	}
+
+	public String joinRewrite(AST_FORCLAUSE forNode,
+			ArrayList<Partition> partitions, XQProcessVisitor visitor,
+			AST_RETURNCLAUSE returnXq) {
+
+		String result = "";
+		AST_XQ xqNodeFinal = (AST_XQ) returnXq.jjtGetChild(0);
+		visitor.noNestedXQRewrite = true;
+		String xqResultStr = (String) visitor.visit(xqNodeFinal, null);
+		visitor.noNestedXQRewrite = false;
+		log.DebugLog(xqResultStr);
+
+		if (partitions.size() == 2) {
+			String part1 = "for";
+			String return1 = "return ";
+			boolean firstFlag1 = true;
+			Partition partition1 = partitions.get(0);
+			String part2 = "for";
+			String return2 = "return ";
+			boolean firstFlag2 = true;
+			Partition partition2 = partitions.get(1);
+
+			assert ((forNode.jjtGetNumChildren() + 1) % 3 == 0);
+			// we will need to make varNum amount of variable bindings
+			int varNum = (forNode.jjtGetNumChildren() + 1) / 3;
+			for (int i = 0; i < varNum; i++) {
+				SimpleNode nameNode = (SimpleNode) forNode.jjtGetChild(i * 3);
+
+				SimpleNode xqNode = (SimpleNode) forNode.jjtGetChild(i * 3 + 1);
+				assert (xqNode.getId() == JJTXQ && nameNode.getId() == JJTVAR);
+
+				String varName = nameNode.getText();
+				visitor.noNestedXQRewrite = true;
+				String xqStr = (String) visitor.visit((AST_XQ) xqNode, null);
+
+				if (partition1.varNameSet.contains(varName)) {
+					String prefix = "";
+					if (firstFlag1) {
+						prefix = " ";
+						firstFlag1 = false;
+					} else {
+						prefix = ",\n";
+					}
+					part1 += (prefix + varName + " in " + xqStr);
+				} else if (partition2.varNameSet.contains(varName)) {
+					String prefix = "";
+					if (firstFlag2) {
+						prefix = " ";
+						firstFlag2 = false;
+					} else {
+						prefix = ",\n";
+					}
+					part2 += (prefix + varName + " in " + xqStr);
+				} else {
+					log.ErrorLog("VarName not found in any partition!!");
+					return null;
+				}
+			}
+			visitor.noNestedXQRewrite = false;
+			part1 = AppendWhereText(part1, partition1);
+			part2 = AppendWhereText(part2, partition2);
+
+			return1 = GetInnerReturnText(partition1);
+			return2 = GetInnerReturnText(partition2);
+
+			part1 += ("\n" + return1);
+			part2 += ("\n" + return2);
+
+			// log.DebugLog(part1);
+			// log.DebugLog(part2);
+
+			// I only implemented condition where split node amount is one
+			assert (splitNodeList.size() == 1);
+
+			SplitNode splitNode = splitNodeList.get(0);
+			String part3 = "[" + splitNode.getBaseBinding().get(0) + "]";
+			String part4 = "[" + splitNode.getOtherBinding().get(0) + "]";
+
+			String prefix = "for $tuple in join(\n";
+			String finalResult = "";
+			finalResult += (prefix + part1 + ",\n\n" + part2 + ",\n\n" + part3
+					+ ", " + part4 + "\n)\n");
+			finalResult += ("return " + xqResultStr);
+			System.out.println(finalResult);
+			return finalResult;
+
+		} else {
+			log.ErrorLog("Partitions more than 2 has not been implemented yet!");
+			return null;
+		}
+
+	}
+
+	private String GetInnerReturnText(Partition partition) {
+		String result = "return <tuple>{\n";
+
+		for (String str : partition.varNameSet) {
+			result += "<" + str.substring(1) + ">{" + str + "}</"
+					+ str.substring(1) + ">\n";
+		}
+		result += "}</tuple>";
+		return result;
+	}
+
+	private String AppendWhereText(String current, Partition partition) {
+		String result = new String(current);
+		boolean firstFlag = true;
+		for (OperateNode on : partition.operateNodeSet) {
+			if (firstFlag) {
+				result += ("\nwhere " + on.getBaseBinding().get(0) + " eq " + on
+						.getStringConstant());
+				firstFlag = false;
+			} else {
+				result += (" and " + on.getBaseBinding().get(0) + " eq " + on
+						.getStringConstant());
+			}
+		}
+		return result;
 	}
 
 	private AbstractBaseCondNode buildNode(AST_XQ xq1, AST_XQ xq2) {

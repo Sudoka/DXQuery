@@ -7,9 +7,12 @@ import java.util.Set;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.org.apache.regexp.internal.REUtil;
+
 public class NodeProcessor implements XQueryParserTreeConstants {
 
 	public DebugLogger log = new DebugLogger("NodeProcessor");
+	public boolean rpTextMode = false;
 
 	public NodeProcessor() {
 		log.SetObjectControl(false, false, true);
@@ -23,6 +26,65 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 	@SuppressWarnings("unchecked")
 	public ArrayList<Object> ProcessRP(AST_RP thisNode, Node domParent,
 			int domOperation) {
+
+		if (rpTextMode) {
+
+			int childrenNum = thisNode.jjtGetNumChildren();
+			switch (childrenNum) {
+			case 1:
+				SimpleNode firstChild = (SimpleNode) thisNode.children[0];
+				int firstChildId = firstChild.getId();
+				String resultStr = "";
+				ArrayList<Object> result = new ArrayList<Object>();
+				if (firstChildId == JJTTAGNAME) {
+					resultStr += ((AST_TAGNAME) firstChild).getText();
+				} else if (firstChildId == JJTTXT) {
+					resultStr += "text()";
+				} else {
+					log.ErrorLog("Converting rp to text, encountered not covered token!");
+					return null;
+				}
+				result.add(resultStr);
+				return result;
+			case 3:
+				firstChild = (SimpleNode) thisNode.children[0];
+				firstChildId = firstChild.getId();
+				String firstStr = null;
+				switch (firstChildId) {
+				case JJTTAGNAME:
+					firstStr = firstChild.getText();
+					break;
+				default:
+					log.ErrorLog("Converting rp to text, encountered unexpected \n"
+							+ "first child among 3 children!");
+					break;
+				}
+
+				SimpleNode secondChild = (SimpleNode) thisNode.children[1];
+				int secondChildId = secondChild.getId();
+				assert (secondChildId == JJTSINGLESLASH || secondChildId == JJTDOUBLESLASH);
+
+				SimpleNode thirdChild = (SimpleNode) thisNode.children[2];
+				int thirdChildId = thirdChild.getId();
+				assert (thirdChildId == JJTRP);
+				ArrayList<Object> secondResult = ProcessRP((AST_RP) thirdChild,
+						domParent, domOperation);
+				String secondStr = (String) secondResult.get(0);
+
+				String middle = (secondChildId == JJTSINGLESLASH ? "/" : "//");
+
+				resultStr = firstStr + middle + secondStr;
+
+				result = new ArrayList<Object>();
+				result.add(resultStr);
+				return result;
+			default:
+				log.ErrorLog("Converting rp to text, encountered not covered token!");
+				return null;
+			}
+
+		}
+
 		log.RegularLog("DomParent Node name:" + domParent.getNodeName());
 		// will be returned by this method
 		ArrayList<Object> result = null;
@@ -639,18 +701,20 @@ public class NodeProcessor implements XQueryParserTreeConstants {
 			else
 				return false;
 		}
-//		if(a.getNodeType() == Node.TEXT_NODE || b.getNodeType() == Node.TEXT_NODE){
-//			if(a.getNodeType() == Node.TEXT_NODE || b.getNodeType() == Node.TEXT_NODE){
-//				return a.getNodeValue().equals(b.getNodeValue());
-//			}
-//			else{
-//				Node textNode = a.getNodeType() == Node.TEXT_NODE ? a:b;
-//				Node noneTextNode = a.getNodeType() == Node.TEXT_NODE ? b:a;
-//				if(noneTextNode.getChildNodes().getLength() == 1){
-//					
-//				}
-//			}
-//		}		
+		// if(a.getNodeType() == Node.TEXT_NODE || b.getNodeType() ==
+		// Node.TEXT_NODE){
+		// if(a.getNodeType() == Node.TEXT_NODE || b.getNodeType() ==
+		// Node.TEXT_NODE){
+		// return a.getNodeValue().equals(b.getNodeValue());
+		// }
+		// else{
+		// Node textNode = a.getNodeType() == Node.TEXT_NODE ? a:b;
+		// Node noneTextNode = a.getNodeType() == Node.TEXT_NODE ? b:a;
+		// if(noneTextNode.getChildNodes().getLength() == 1){
+		//
+		// }
+		// }
+		// }
 		if (!a.getNodeName().equals(b.getNodeName())
 				|| a.getChildNodes().getLength() != b.getChildNodes()
 						.getLength() || a.getNodeType() != b.getNodeType()) {

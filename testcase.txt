@@ -1,0 +1,8 @@
+
+for $a in doc("bib.xml")//book,
+	$st in $a//title,
+	$sl in $a//last/text(),
+	$x in doc("bib.xml")//reviews,
+	$xt in $x//title
+where $sl = "Lorant" and $xt = $st
+return <title>{$a//price}</title>
